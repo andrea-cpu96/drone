@@ -1,0 +1,61 @@
+# ============================
+#  BUILD SYSTEM (Zephyr/CMake)
+# ============================
+build/
+build-*/
+*.o
+*.a
+*.elf
+*.map
+*.bin
+*.hex
+*.log
+*.d
+*.lst
+
+# Ninja
+.ninja_deps
+.ninja_log
+
+# CMake cache
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+
+# ============================
+#  PYTHON
+# ============================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Matplotlib cache
+.matplotlib/
+
+# ============================
+#  EDITOR / IDE
+# ============================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ============================
+#  OS FILES
+# ============================
+.DS_Store
+Thumbs.db
+
+# ============================
+#  LOGS / TEMP
+# ============================
+*.tmp
+*.bak
+*.old
+*.log
