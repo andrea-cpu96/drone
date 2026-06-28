@@ -6,12 +6,8 @@
 
 #include "pid.h"
 
-#define REFERENCE_ALTITUDE 1000
-
-#define SEND_RATE_MS 250 // send at 50 Hz
-#define T_CLIMB_MS 1020
-// Motor commands in milli-units (x1000)
-#define CLIMB_MILLI 3000  // climb (strong thrust ~2:1)
+#define REFERENCE_ALTITUDE 100
+#define SEND_RATE_MS 10 // send at 50 Hz
 
 K_THREAD_STACK_DEFINE(flight_stack, 2048);
 static struct k_thread flight_tid;
@@ -23,12 +19,11 @@ static void uart_read(void);
 
 void flight_thread(void *a, void *b, void *c)
 {
+    static uint32_t time = 0;
+
     int m1, m2, m3, m4;
     int feedback = 0;
     int control = 0;
-
-    // climb
-    m1 = m2 = m3 = m4 = CLIMB_MILLI;
 
     printf("%d.%03d %d.%03d %d.%03d %d.%03d\n", 0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -37,23 +32,19 @@ void flight_thread(void *a, void *b, void *c)
         uart_read();
 
         k_msleep(SEND_RATE_MS);
-
+        
         feedback = atoi(uart_buffer);  // convert char to int
 
-        control = pid_run(feedback, 0);
+        control = pid_run(feedback, time);
 
-        if (control < -1000)
-            control = -1000;
-
-        if (control > 1000)
-            control = 1000;
+        time += SEND_RATE_MS;
 
         printf("feedback = %d, control = %d\n", feedback, control);
 
-        m1 += control;
-        m2 += control;
-        m3 += control;
-        m4 += control;
+        m1 = control + 2092;
+        m2 = control + 2092;
+        m3 = control + 2092;
+        m4 = control + 2092;
 
         if (m1 < 0)
             m1 = 0;
@@ -89,7 +80,7 @@ int main(void)
     printf("Flight thread starting...\n");
     fflush(stdout);
 
-    pid_init((pid_handler_t){.ref = REFERENCE_ALTITUDE, .kp = 10, .ki = 0, .kd = 0});
+    pid_init((pid_handler_t){.ref = REFERENCE_ALTITUDE, .kp = 21, .ki = 5, .kd = 8});
 
     k_thread_create(&flight_tid, flight_stack,
                     K_THREAD_STACK_SIZEOF(flight_stack), flight_thread, NULL,

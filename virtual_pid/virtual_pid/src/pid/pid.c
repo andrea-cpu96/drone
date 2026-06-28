@@ -8,12 +8,12 @@ static float kp = 0.0;
 static float ki = 0.0;
 static float kd = 0.0;
 
-static int32_t sample[SAMPLE_WINDOW] = {0};
-static int32_t time[TIME_WINDOW] = {0};
+static int32_t e_prev = 0;
+static int32_t t_prev = 0;
 
 static int32_t pid_p(int e);
-static int32_t pid_i(int e);
-static int32_t pid_d(int e);
+static int32_t pid_i(int e, int dt_ms);
+static int32_t pid_d(int e, int dt_ms);
 
 /**
  * @brief PID init function
@@ -37,24 +37,29 @@ void pid_init(pid_handler_t hpid)
  */
 int pid_run(int32_t fb, int32_t t)
 {
-    static int32_t sample_i = 0;
-    static int32_t time_i = 0;
-
     int32_t control_out = 0;
 
-    // Save Feedback sample
-    sample[sample_i] = fb;
-    sample_i++;
-
-    // Save time sample
-    time[time_i] = t;
-    time_i++;
+    // Calculate the time difference
+    int dt = (t - t_prev);
 
     // Evaluate the error
     int32_t e = (ref - fb);
 
     // Proportional component
     control_out = pid_p(e);
+
+    // Integral component
+    control_out += pid_i(e, dt);
+
+    // Derivative component
+    if(dt > 0)
+        control_out += pid_d(e, dt);
+
+    // Save the previous error
+    e_prev = e;
+
+    // Save the previous time
+    t_prev = t;
 
     // Return the output controller
     return control_out;
@@ -87,9 +92,13 @@ static int32_t pid_p(int e)
  * @param e
  * @return int32_t
  */
-static int32_t pid_i(int e)
+static int32_t pid_i(int e, int dt_ms)
 {
-    return (ki * e);
+    static float integral = 0.0f;
+
+    integral += ((float)e * (float)dt_ms / 1000.0f);
+
+    return (ki * integral);
 }
 
 /**
@@ -98,7 +107,13 @@ static int32_t pid_i(int e)
  * @param e
  * @return int32_t
  */
-static int32_t pid_d(int e)
+static int32_t pid_d(int e, int dt_ms)
 {
-    return (kd * e);
+    if (dt_ms <= 0)
+        return 0;
+
+    float de = (float)(e - e_prev);
+    float d = kd * (de * 1000.0f / (float)dt_ms);
+
+    return (int32_t)d;
 }
