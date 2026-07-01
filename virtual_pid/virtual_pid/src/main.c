@@ -119,6 +119,13 @@ static void uart_read(void)
  */
 static void send_motor_command(int m1, int m2, int m3, int m4)
 {
+#ifdef CONFIG_SIMULATION_MODE
     printf("%d.%03d %d.%03d %d.%03d %d.%03d\n", m1 / 1000, m1 % 1000, m2 / 1000,
            m2 % 1000, m3 / 1000, m3 % 1000, m4 / 1000, m4 % 1000);
+#else
+    ARG_UNUSED(m1);
+    ARG_UNUSED(m2);
+    ARG_UNUSED(m3);
+    ARG_UNUSED(m4);
+#endif
 }

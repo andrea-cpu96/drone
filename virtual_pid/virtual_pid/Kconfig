@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Virtual PID Application"
+
+config SIMULATION_MODE
+	bool "Enable simulation mode"
+	default n
+	help
+	  When enabled, send_motor_command() prints the motor throttle values
+	  to the console so the host-side drone simulation can read them.
+	  Disable this on real hardware where the motors are driven directly.
+
+source "Kconfig.zephyr"
