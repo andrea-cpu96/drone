@@ -1,0 +1,37 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Application devicetree overlay for the STM32F411E Discovery board.
+ *
+ *   Zephyr board name : stm32f411e_disco   (build with -b stm32f411e_disco)
+ *   SoC               : stm32f411xe        (STM32F411VET6, Cortex-M4F)
+ *   PCB revision       : default is rev D; for rev B build with
+ *                        -b stm32f411e_disco@B
+ *
+ * The board's base devicetree is already provided by Zephyr. This file is
+ * where the application adds its own nodes and property overrides. For now it
+ * is intentionally empty; add the peripherals used by the flight controller
+ * here later (e.g. timers/PWM for the ESCs, I2C/SPI sensors, extra UARTs).
+ *
+ * Note: the Zephyr console is already mapped to USART2 (PA2/PA3, 115200 8N1)
+ * via DT_CHOSEN(zephyr_console) in the board devicetree, so main.c works
+ * without any change here.
+ */
+
+/ {
+	/* Add application-specific devicetree nodes here. */
+};
+
+/*
+ * Example — override or extend an existing peripheral node:
+ *
+ * &usart2 {
+ *     current-speed = <115200>;
+ * };
+ *
+ * Example — enable a timer to drive motor PWM outputs (fill in later):
+ *
+ * &timers4 {
+ *     status = "okay";
+ * };
+ */
