@@ -8,30 +8,49 @@
  *   PCB revision       : default is rev D; for rev B build with
  *                        -b stm32f411e_disco@B
  *
- * The board's base devicetree is already provided by Zephyr. This file is
- * where the application adds its own nodes and property overrides. For now it
- * is intentionally empty; add the peripherals used by the flight controller
- * here later (e.g. timers/PWM for the ESCs, I2C/SPI sensors, extra UARTs).
+ * The board's base devicetree is already provided by Zephyr. This file adds
+ * the PWM outputs used to drive the four ESCs (electronic speed controllers)
+ * of the quad-rotor.
+ *
+ * Timer choice
+ * ------------
+ * The board already uses TIM4 (&pwm4) for the four on-board LEDs (PD12..PD15,
+ * see the board's "pwmleds" node), so TIM4 is left untouched. Instead we take
+ * TIM1, an advanced-control timer that is otherwise unused on this board and
+ * is the classic choice for motor control. Its four channels are routed to
+ * free pins on port E:
+ *
+ *   ESC1 -> TIM1_CH1 -> PE9
+ *   ESC2 -> TIM1_CH2 -> PE11
+ *   ESC3 -> TIM1_CH3 -> PE13
+ *   ESC4 -> TIM1_CH4 -> PE14
+ *
+ * TIM1 is clocked from APB2 at 96 MHz. With st,prescaler = 95 the counter runs
+ * at 96 MHz / (95 + 1) = 1 MHz, i.e. 1 us per tick, giving fine control of the
+ * standard ESC pulse widths (1..2 ms inside a 20 ms / 50 Hz frame).
  *
  * Note: the Zephyr console is already mapped to USART2 (PA2/PA3, 115200 8N1)
  * via DT_CHOSEN(zephyr_console) in the board devicetree, so main.c works
  * without any change here.
+ *
+ * Application usage (main.c):
+ *
+ *   const struct device *esc = DEVICE_DT_GET(DT_NODELABEL(pwm1));
+ *   // channel 1..4, period and pulse in nanoseconds:
+ *   pwm_set(esc, 1, PWM_MSEC(20), PWM_USEC(1500), PWM_POLARITY_NORMAL);
  */
 
-/ {
-	/* Add application-specific devicetree nodes here. */
+/* Four ESC PWM outputs on TIM1 (PE9/PE11/PE13/PE14). */
+&timers1 {
+	st,prescaler = <95>;   /* 96 MHz / (95 + 1) = 1 MHz -> 1 us per tick */
+	status = "okay";
+
+	pwm1: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim1_ch1_pe9
+			     &tim1_ch2_pe11
+			     &tim1_ch3_pe13
+			     &tim1_ch4_pe14>;
+		pinctrl-names = "default";
+	};
 };
-
-/*
- * Example — override or extend an existing peripheral node:
- *
- * &usart2 {
- *     current-speed = <115200>;
- * };
- *
- * Example — enable a timer to drive motor PWM outputs (fill in later):
- *
- * &timers4 {
- *     status = "okay";
- * };
- */
