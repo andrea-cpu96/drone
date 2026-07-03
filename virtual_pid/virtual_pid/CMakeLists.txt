@@ -6,7 +6,9 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(virtual_pid)
 
 target_sources(app PRIVATE src/main.c
-                           src/pid/pid.c)
+                           src/pid/pid.c
+                           src/esc/esc.c)
 
-target_include_directories(app PRIVATE src,
-                                       src/pid)
+target_include_directories(app PRIVATE src
+                                       src/pid
+                                       src/esc)

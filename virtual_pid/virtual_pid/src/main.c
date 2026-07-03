@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/uart.h>
 
 #include "pid.h"
+#include "esc.h"
 
 #define REFERENCE_ALTITUDE 100
 #define SEND_RATE_MS 10
@@ -70,6 +71,7 @@ int main(void)
     fflush(stdout);
 
     pid_init(&throttle_pid, REFERENCE_ALTITUDE, 21, 5, 8);
+    esc_init();
 
     k_thread_create(&flight_tid, flight_stack,
                     K_THREAD_STACK_SIZEOF(flight_stack), flight_thread, NULL,

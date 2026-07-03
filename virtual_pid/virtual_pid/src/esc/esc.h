@@ -1,0 +1,1 @@
+void esc_init(void);

@@ -1,0 +1,15 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+ / {
+     aliases {
+         esc-controller = &pwm1;
+     };
+
+     pwm1: pwm {
+         compatible = "zephyr,pwm-emul";
+         status = "okay";
+         #pwm-cells = <3>;
+     };
+ };

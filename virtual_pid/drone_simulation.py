@@ -284,7 +284,7 @@ def serial_reader(shared, stop_event, model):
         print("[*] Server spento.")
 
 # ============================================================================
-#  VISUALIZZATORE 3D (identico)
+#  VISUALIZZATORE 3D — CON LINEA QUOTA 100m
 # ============================================================================
 class DroneVisualizer:
     def __init__(self, model, shared, stop_event):
@@ -308,6 +308,17 @@ class DroneVisualizer:
         self.ax.set_box_aspect((1,1,1))
 
         self._build_ground()
+
+        # --- LINEA QUOTA 100m ---
+        z_mark = 100.0
+        self.alt_line, = self.ax.plot(
+            [-VIEW_HALF, VIEW_HALF],
+            [0, 0],
+            [z_mark, z_mark],
+            color='magenta',
+            lw=2,
+            linestyle='--'
+        )
 
         arm_colors = ['#d62728','#d62728','#1f77b4','#1f77b4']
         self.arm_lines = [self.ax.plot([],[],[],color=c,lw=3)[0] for c in arm_colors]
@@ -387,6 +398,11 @@ class DroneVisualizer:
         self.ax.set_ylim(cy-VIEW_HALF, cy+VIEW_HALF)
         self.ax.set_zlim(zc-VIEW_HALF, zc+VIEW_HALF)
 
+        # --- MANTIENI LA LINEA DI QUOTA CENTRATA ---
+        self.alt_line.set_data([p[0]-VIEW_HALF, p[0]+VIEW_HALF],
+                               [p[1], p[1]])
+        self.alt_line.set_3d_properties([100.0, 100.0])
+
         roll,pitch,yaw = self.model.euler_deg()
         speed = np.linalg.norm(self.model.velocity)
         conn = "CONNESSO" if self.shared.connected else "in attesa di QEMU"
@@ -402,7 +418,8 @@ class DroneVisualizer:
         )
 
         return (self.arm_lines + self.rotor_lines +
-                [self.heading_line, self.center_pt, self.trail_line, self.hud])
+                [self.heading_line, self.center_pt, self.trail_line,
+                 self.hud, self.alt_line])
 
     def run(self):
         self.anim = matplotlib.animation.FuncAnimation(
