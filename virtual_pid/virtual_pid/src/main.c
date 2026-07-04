@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <zephyr/kernel.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/kernel.h>
 
-#include "pid.h"
 #include "esc.h"
+#include "pid.h"
 
 #define REFERENCE_ALTITUDE 100
 #define SEND_RATE_MS 10
@@ -49,7 +49,7 @@ void flight_thread(void *a, void *b, void *c)
 
         printf("feedback = %d, control = %d\n", feedback, control);
 
-        for(int i = 0; i < MOTOR_NUM; i++)
+        for (int i = 0; i < MOTOR_NUM; i++)
         {
             motor[i] = control + LIFTOFF_THROTTLE;
 
@@ -58,7 +58,7 @@ void flight_thread(void *a, void *b, void *c)
             else if (motor[i] > THROTTLE_LIMIT)
                 motor[i] = THROTTLE_LIMIT;
         }
-         
+
         send_motor_command(motor[0], motor[1], motor[2], motor[3]);
 
         fflush(stdout);
@@ -71,7 +71,7 @@ int main(void)
     fflush(stdout);
 
     pid_init(&throttle_pid, REFERENCE_ALTITUDE, 21, 5, 8);
-    esc_init();
+    esc_init(MOTOR_NUM);
 
     k_thread_create(&flight_tid, flight_stack,
                     K_THREAD_STACK_SIZEOF(flight_stack), flight_thread, NULL,
@@ -125,9 +125,13 @@ static void send_motor_command(int m1, int m2, int m3, int m4)
     printf("%d.%03d %d.%03d %d.%03d %d.%03d\n", m1 / 1000, m1 % 1000, m2 / 1000,
            m2 % 1000, m3 / 1000, m3 % 1000, m4 / 1000, m4 % 1000);
 #else
-    ARG_UNUSED(m1);
-    ARG_UNUSED(m2);
-    ARG_UNUSED(m3);
-    ARG_UNUSED(m4);
+    float m[MOTOR_NUM] = {0.0f};
+
+    m[1] = ((float)m1 / (float)THROTTLE_LIMIT);
+    m[2] = ((float)m2 / (float)THROTTLE_LIMIT);
+    m[3] = ((float)m3 / (float)THROTTLE_LIMIT);
+    m[4] = ((float)m4 / (float)THROTTLE_LIMIT);
+
+    esc_set(m);
 #endif
 }
