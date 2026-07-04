@@ -7,4 +7,4 @@ typedef enum
 } esc_status;
 
 esc_status esc_init(int n_ch);
-esc_status esc_run(float *m);
+esc_status esc_set(float *m);

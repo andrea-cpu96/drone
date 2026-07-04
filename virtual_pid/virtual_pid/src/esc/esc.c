@@ -1,5 +1,7 @@
 #include "esc.h"
 
+#include <stdio.h>
+
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/kernel.h>
 
@@ -19,7 +21,7 @@ esc_status esc_init(int n_ch)
 
     esc_ch_num = n_ch;
 
-    if (nofch > CH_NUM_MAX)
+    if (esc_ch_num > CH_NUM_MAX)
     {
         return ESC_ERR;
     }
@@ -30,7 +32,7 @@ esc_status esc_init(int n_ch)
         return ESC_ERR;
     }
 
-    for (int i = 0; i < nofch; i++)
+    for (int i = 0; i < esc_ch_num; i++)
     {
         pwm_ok = pwm_set(esc_pwm, i, PWM_PERIOD_NS, PWM_PULSE_NS, 0);
         if (pwm_ok < 0)
@@ -50,7 +52,7 @@ esc_status esc_set(float *m)
 #ifndef CONFIG_SIMULATION_MODE
     float speed_perc = 0.0f;
 
-    for (int i; i < esc_ch_num; i++)
+    for (int i = 0; i < esc_ch_num; i++)
     {
         if ((m[i] < 0.0f) || (m[i] > 1.0f))
         {
@@ -58,7 +60,7 @@ esc_status esc_set(float *m)
         }
     }
 
-    for (int i; i < esc_ch_num; i++)
+    for (int i = 0; i < esc_ch_num; i++)
     {
         speed_perc = (m[i] * (float)PWM_PERIOD_NS);
         pwm_set(esc_pwm, i, PWM_PERIOD_NS, (int)speed_perc, 0);

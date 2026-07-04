@@ -99,7 +99,7 @@ static void sensor_reads(void)
 #endif // CONFIG_SIMULATION_MODE
 }
 
-#ifdef #ifdef CONFIG_SIMULATION_MODE
+#ifdef CONFIG_SIMULATION_MODE
 /**
  * @brief Read a line from the console
  *
@@ -148,10 +148,10 @@ static void send_motor_command(int m1, int m2, int m3, int m4)
 #else
     float m[MOTOR_NUM] = {0.0f};
 
-    m[1] = ((float)m1 / (float)THROTTLE_LIMIT);
-    m[2] = ((float)m2 / (float)THROTTLE_LIMIT);
-    m[3] = ((float)m3 / (float)THROTTLE_LIMIT);
-    m[4] = ((float)m4 / (float)THROTTLE_LIMIT);
+    m[0] = ((float)m1 / (float)THROTTLE_LIMIT);
+    m[1] = ((float)m2 / (float)THROTTLE_LIMIT);
+    m[2] = ((float)m3 / (float)THROTTLE_LIMIT);
+    m[3] = ((float)m4 / (float)THROTTLE_LIMIT);
 
     esc_set(m);
 #endif
