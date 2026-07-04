@@ -15,10 +15,15 @@ if [[ ! -f "${HOME}/zephyrproject/zephyr/zephyr-env.sh" ]]; then
   exit 1
 fi
 
-source "${HOME}/zephyrproject/.venv/bin/activate"
-source "${HOME}/zephyrproject/zephyr/zephyr-env.sh"
+if ! (
+  source "${HOME}/zephyrproject/.venv/bin/activate"
+  source "${HOME}/zephyrproject/zephyr/zephyr-env.sh"
 
-cd "${APP_DIR}"
-echo "Building firmware for STM32 target: stm32f411e_disco"
-rm -rf build
-west build -b stm32f411e_disco
+  cd "${APP_DIR}"
+  echo "Building firmware for STM32 target: stm32f411e_disco"
+  rm -rf build
+  west build -b stm32f411e_disco
+); then
+  echo "STM32 build failed" >&2
+  exit 1
+fi

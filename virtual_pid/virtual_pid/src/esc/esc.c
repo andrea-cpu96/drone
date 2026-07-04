@@ -32,7 +32,7 @@ esc_status esc_init(int n_ch)
         return ESC_ERR;
     }
 
-    for (int i = 0; i < esc_ch_num; i++)
+    for (int i = 1; i <= esc_ch_num; i++)
     {
         pwm_ok = pwm_set(esc_pwm, i, PWM_PERIOD_NS, PWM_PULSE_NS, 0);
         if (pwm_ok < 0)
@@ -63,7 +63,7 @@ esc_status esc_set(float *m)
     for (int i = 0; i < esc_ch_num; i++)
     {
         speed_perc = (m[i] * (float)PWM_PERIOD_NS);
-        pwm_set(esc_pwm, i, PWM_PERIOD_NS, (int)speed_perc, 0);
+        pwm_set(esc_pwm, i+1, PWM_PERIOD_NS, (int)speed_perc, 0);
     }
 
     return ESC_OK;
