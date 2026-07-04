@@ -10,9 +10,16 @@ The two components communicate through a virtual serial link over TCP.
 
 🚀 Quick Start Guide
 
-To run the simulation, you need two WSL terminals.
+Automation helpers are available in the scripts folder. From the project root, you can use:
 
-1) Environment Setup (in both terminals)
+- `./scripts/build_stm32.sh` to build the firmware for the STM32 target
+- `./scripts/build_qemu.sh` to build the firmware for the QEMU target
+- `./scripts/start_drone_server_simulator.sh` to start the Python serial monitor server
+- `./scripts/run_qemu_simulation.sh` to launch QEMU with the built firmware
+
+To run the simulation, you need two shells.
+
+1) Environment Setup (in both shells)
 
 Before running anything, activate the Python virtual environment and load Zephyr’s environment:
 
@@ -22,42 +29,50 @@ Before running anything, activate the Python virtual environment and load Zephyr
 # 2. Initialize the Zephyr build environment
 `source ~/zephyrproject/zephyr/zephyr-env.sh`
 
-2) Terminal 1 — Run the Simulation Server (Python)
+2) Shell 1 — Run the Simulation Server (Python)
 
-The Python script acts as a TCP server listening on port 1234.Start it before launching QEMU.
+The Python script acts as a TCP server listening on port 1234. Start it before launching QEMU.
 
-`cd ~/embedded_projects/drone`
+```bash
+cd ~/embedded_projects/drone
+./scripts/start_drone_server_simulator.sh
+```
 
-python serial_monitor.py
+The shell will wait for QEMU to connect.
 
-The terminal will wait for QEMU to connect.
+3) Shell 2 — Compile and Run the Firmware (Zephyr)
 
-3) Terminal 2 — Compile and Run the Firmware (Zephyr)
+A. Build for QEMU
 
-A. Clean Build
-
-`cd virtual_pid/virtual_pid/`
-
-Run this from the project root (where CMakeLists.txt is located):
-
-`rm -rf build/ && west build -b qemu_cortex_m3`
+```bash
+cd ~/embedded_projects/drone
+./scripts/build_qemu.sh
+```
 
 B. Launch QEMU (TCP Client Mode)
 
-To avoid West’s flag parsing issues on WSL, run QEMU manually:
+```bash
+cd ~/embedded_projects/drone
+./scripts/run_qemu_simulation.sh
+```
 
-`/home/andrea/zephyr-sdk-1.0.1/hosttools/sysroots/x86_64-pokysdk-linux/usr/bin/qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -serial tcp:127.0.0.1:1234 -kernel build/zephyr/zephyr.elf`
+C. Build for STM32 hardware
+
+```bash
+cd ~/embedded_projects/drone
+./scripts/build_stm32.sh
+```
 
 🔍 Expected Output
 
 When QEMU starts, it connects immediately to the Python server.
 
-Terminal 1 (Python)
+Shell 1 (Python)
 
 [+] QEMU connected from: ('127.0.0.1', 33826)  
 python reply: *** Booting Zephyr OS build v4.4.0 ***  
 python reply: Hello World! qemu_cortex_m3/ti_lm3s6965
 
-Terminal 2 (QEMU)
+Shell 2 (QEMU)
 
 You will see Zephyr boot logs and your application output.
