@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-APP_DIR="${PROJECT_ROOT}/virtual_pid/virtual_pid"
+APP_DIR="${PROJECT_ROOT}/flight_controller"
 KERNEL_PATH="${APP_DIR}/build/zephyr/zephyr.elf"
 QEMU_BIN="${QEMU_BIN:-${HOME}/zephyr-sdk-1.0.1/hosttools/sysroots/x86_64-pokysdk-linux/usr/bin/qemu-system-arm}"
 

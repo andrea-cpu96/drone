@@ -1,4 +1,4 @@
-# Virtual PID & Drone Simulation (Zephyr + QEMU + Python)
+# Flight Controller & Drone Simulation (Zephyr + QEMU + Python)
  
 This project implements a real‑time Software‑in‑the‑Loop (SITL) co‑simulation between:
 

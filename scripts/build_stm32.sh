@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-APP_DIR="${PROJECT_ROOT}/virtual_pid/virtual_pid"
+APP_DIR="${PROJECT_ROOT}/flight_controller"
 
 if [[ ! -f "${HOME}/zephyrproject/.venv/bin/activate" ]]; then
   echo "Missing virtual environment at ${HOME}/zephyrproject/.venv/bin/activate"

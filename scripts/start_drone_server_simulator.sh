@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-PYTHON_DIR="${PROJECT_ROOT}/virtual_pid"
+PYTHON_DIR="${PROJECT_ROOT}/flight_controller"
 
 cd "${PYTHON_DIR}"
 echo "Starting drone server simulator..."
