@@ -14,6 +14,11 @@
 #define THROTTLE_LIMIT 4000
 #define MOTOR_NUM 4
 
+struct sens_fb_st 
+{
+    int altitude;
+} sens_fb;
+
 K_THREAD_STACK_DEFINE(flight_stack, 2048);
 static struct k_thread flight_tid;
 
@@ -23,8 +28,12 @@ static int motor[MOTOR_NUM] = {0, 0, 0, 0};
 const struct device *uart = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 char uart_buffer[128];
 
-static void uart_read(void);
+static void sensor_reads(void);
 static void send_motor_command(int m1, int m2, int m3, int m4);
+
+#ifdef CONFIG_SIMULATION_MODE
+static void uart_read(void);
+#endif // CONFIG_SIMULATION_MODE
 
 void flight_thread(void *a, void *b, void *c)
 {
@@ -37,7 +46,7 @@ void flight_thread(void *a, void *b, void *c)
 
     while (1)
     {
-        uart_read();
+        sensor_reads();
 
         k_msleep(SEND_RATE_MS);
 
@@ -80,6 +89,17 @@ int main(void)
     return 0;
 }
 
+static void sensor_reads(void)
+{
+#ifdef CONFIG_SIMULATION_MODE
+    uart_read();
+#else
+    // Update sens_fb
+    // sens_fb.altitude = read_buff();
+#endif // CONFIG_SIMULATION_MODE
+}
+
+#ifdef #ifdef CONFIG_SIMULATION_MODE
 /**
  * @brief Read a line from the console
  *
@@ -110,6 +130,7 @@ static void uart_read(void)
         }
     }
 }
+#endif // CONFIG_SIMULATION_MODE
 
 /**
  * @brief Send motor command to the console
