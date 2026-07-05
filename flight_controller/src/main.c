@@ -14,13 +14,15 @@
 #define THROTTLE_LIMIT 4000
 #define MOTOR_NUM 4
 
-struct sens_fb_st 
+// Thread configuration
+#define PID_THREAD_PRIO 1
+K_THREAD_STACK_DEFINE(flight_stack, 2048);
+static struct k_thread flight_tid;
+
+struct sens_fb_st
 {
     int altitude;
 } sens_fb;
-
-K_THREAD_STACK_DEFINE(flight_stack, 2048);
-static struct k_thread flight_tid;
 
 pid_handler_t throttle_pid;
 static int motor[MOTOR_NUM] = {0, 0, 0, 0};
@@ -32,8 +34,8 @@ static void sensor_reads(void);
 static void send_motor_command(int m1, int m2, int m3, int m4);
 
 #ifdef CONFIG_SIMULATION_MODE
-static void uart_read(void);
-#endif // CONFIG_SIMULATION_MODE
+static int uart_read(void);
+#endif  // CONFIG_SIMULATION_MODE
 
 void flight_thread(void *a, void *b, void *c)
 {
@@ -46,11 +48,22 @@ void flight_thread(void *a, void *b, void *c)
 
     while (1)
     {
-        sensor_reads();
+        /*
+        * This call must be moved to the sensor thread when the sensor thread is implemented.
+        * The flight thread should only read the feedback from the sensor thread.
+        * 
+        * It could happen that while the sensor thread is writing the sens_fb struct, the controller thread is reading it.
+        * This could lead to a race condition.
+        * 
+        * To avoid this, without blocking the controller thread, the sensor thread must provide a flag to indicate that the
+        * sens_fb struct is being updated, and the controller thread must check this flag before reading the sens_fb struct.
+        * This flag should be implemented for those data that must be read together, not for those data that can be read separately.
+        */
+        sensor_reads(); 
 
         k_msleep(SEND_RATE_MS);
 
-        feedback = atoi(uart_buffer);  // convert char to int
+        feedback = sens_fb.altitude;
 
         control = pid_run(&throttle_pid, feedback, time);
 
@@ -84,7 +97,7 @@ int main(void)
 
     k_thread_create(&flight_tid, flight_stack,
                     K_THREAD_STACK_SIZEOF(flight_stack), flight_thread, NULL,
-                    NULL, NULL, 5, 0, K_NO_WAIT);
+                    NULL, NULL, PID_THREAD_PRIO, 0, K_NO_WAIT);
 
     return 0;
 }
@@ -92,11 +105,14 @@ int main(void)
 static void sensor_reads(void)
 {
 #ifdef CONFIG_SIMULATION_MODE
-    uart_read();
+    if(uart_read())
+    {
+        sens_fb.altitude = atoi(uart_buffer);
+    }
 #else
     // Update sens_fb
     // sens_fb.altitude = read_buff();
-#endif // CONFIG_SIMULATION_MODE
+#endif  // CONFIG_SIMULATION_MODE
 }
 
 #ifdef CONFIG_SIMULATION_MODE
@@ -104,33 +120,35 @@ static void sensor_reads(void)
  * @brief Read a line from the console
  *
  */
-static void uart_read(void)
+static int uart_read(void)
 {
+    int data_ready = 0;
+
     uint8_t c;
     uint8_t byte_received = 0;
 
-    while (1)
+    memset(uart_buffer, 0, sizeof(uart_buffer));
+
+    while (uart_poll_in(uart, &c) == 0)
     {
-        if (uart_poll_in(uart, &c) == 0)
+        if (c == '\n' || c == '\r')
         {
-            if (c == '\n' || c == '\r')
+            uart_buffer[byte_received] = '\0';
+            byte_received = 0;
+            data_ready = 1;
+        }
+        else
+        {
+            if (byte_received < sizeof(uart_buffer) - 1)
             {
-                uart_buffer[byte_received] = '\0';
-                byte_received = 0;
-                break;
-            }
-            else
-            {
-                if (byte_received < sizeof(uart_buffer) - 1)
-                {
-                    uart_buffer[byte_received] = c;
-                    byte_received++;
-                }
+                uart_buffer[byte_received] = c;
+                byte_received++;
             }
         }
     }
+    return data_ready;
 }
-#endif // CONFIG_SIMULATION_MODE
+#endif  // CONFIG_SIMULATION_MODE
 
 /**
  * @brief Send motor command to the console
