@@ -14,10 +14,14 @@
 #define THROTTLE_LIMIT 4000
 #define MOTOR_NUM 4
 
-// Thread configuration
-#define PID_THREAD_PRIO 1
-K_THREAD_STACK_DEFINE(flight_stack, 2048);
-static struct k_thread flight_tid;
+// Controller thread configuration
+#define PID_THREAD_PRIO     1
+K_THREAD_STACK_DEFINE(controller_stack, 2048);
+static struct k_thread controller_tid;
+// Sensors thread configuration
+#define SENSORS_THREAD_PRIO 5
+K_THREAD_STACK_DEFINE(sensors_stack, 2048);
+static struct k_thread sensors_tid;
 
 struct sens_fb_st
 {
@@ -32,6 +36,7 @@ char uart_buffer[128];
 
 static void sensor_reads(void);
 static void send_motor_command(int m1, int m2, int m3, int m4);
+static void sensors_thread(void *a, void *b, void *c);
 
 #ifdef CONFIG_SIMULATION_MODE
 static int uart_read(void);
@@ -50,7 +55,7 @@ void controller_thread(void *a, void *b, void *c)
     {
         /*
         * This call must be moved to the sensor thread when the sensor thread is implemented.
-        * The flight thread should only read the feedback from the sensor thread.
+        * The controller thread should only read the feedback from the sensor thread.
         * 
         * It could happen that while the sensor thread is writing the sens_fb struct, the controller thread is reading it.
         * This could lead to a race condition.
@@ -87,17 +92,29 @@ void controller_thread(void *a, void *b, void *c)
     }
 }
 
+static void sensors_thread(void *a, void *b, void *c)
+{
+    while (1)
+    {
+        
+    }
+}
+
 int main(void)
 {
-    printf("Flight thread starting...\n");
+    printf("Controller thread starting...\n");
     fflush(stdout);
 
     pid_init(&throttle_pid, REFERENCE_ALTITUDE, 21, 5, 8);
     esc_init(MOTOR_NUM);
 
-    k_thread_create(&flight_tid, flight_stack,
-                    K_THREAD_STACK_SIZEOF(flight_stack), controller_thread, NULL,
+    k_thread_create(&controller_tid, controller_stack,
+                    K_THREAD_STACK_SIZEOF(controller_stack), controller_thread, NULL,
                     NULL, NULL, PID_THREAD_PRIO, 0, K_NO_WAIT);
+
+    k_thread_create(&sensors_tid, sensors_stack,
+                    K_THREAD_STACK_SIZEOF(sensors_stack), sensors_thread, NULL,
+                    NULL, NULL, SENSORS_THREAD_PRIO, 0, K_NO_WAIT);
 
     return 0;
 }
