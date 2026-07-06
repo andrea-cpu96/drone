@@ -82,6 +82,10 @@ void controller_thread(void *a, void *b, void *c)
 
         time += CONTROL_THREAD_PERIOD_MS;
 
+        /*
+        * These kind of prints must be moved in a dedicated logging thread, to avoid 
+        * blocking the control loop.
+        */
         printf("feedback = %d, control = %d\n", altitude_feedback, control);
 
         for (int i = 0; i < MOTOR_NUM; i++)
@@ -137,18 +141,16 @@ static void sensor_reads(void)
 
 static void read_altitude(void)
 {
+    sens_fb.altitude.updating = true;
 #ifdef CONFIG_SIMULATION_MODE
     if(uart_read())
     {
-        sens_fb.altitude.updating = true;
         sens_fb.altitude.value = atoi(uart_buffer);
-        sens_fb.altitude.updating = false;
     }
 #else
-    // sens_fb.altitude.updating = true;
     // sens_fb.altitude.value = read_buff();
-    // sens_fb.altitude.updating = false;
 #endif  // CONFIG_SIMULATION_MODE
+    sens_fb.altitude.updating = false;
 }
 
 #ifdef CONFIG_SIMULATION_MODE
