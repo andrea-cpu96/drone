@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -8,7 +9,9 @@
 #include "pid.h"
 
 #define REFERENCE_ALTITUDE 100
-#define SEND_RATE_MS 10
+
+#define CONTROL_THREAD_PERIOD_MS 10
+#define SENSORS_THREAD_PERIOD_MS 100
 
 #define LIFTOFF_THROTTLE 2092
 #define THROTTLE_LIMIT 4000
@@ -23,9 +26,18 @@ static struct k_thread controller_tid;
 K_THREAD_STACK_DEFINE(sensors_stack, 2048);
 static struct k_thread sensors_tid;
 
-struct sens_fb_st
+// A single sensor reading: its value plus a dedicated flag set while the value
+// is being written, so the controller can skip the read instead of blocking and
+// never observe a partially updated value.
+struct sensor_st
 {
-    int altitude;
+    int value;
+    volatile bool updating;
+};
+
+struct sensor_fb_st
+{
+    struct sensor_st altitude;
 } sens_fb;
 
 pid_handler_t throttle_pid;
@@ -35,6 +47,7 @@ const struct device *uart = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 char uart_buffer[128];
 
 static void sensor_reads(void);
+static void read_altitude(void);
 static void send_motor_command(int m1, int m2, int m3, int m4);
 static void sensors_thread(void *a, void *b, void *c);
 
@@ -46,35 +59,30 @@ void controller_thread(void *a, void *b, void *c)
 {
     static uint32_t time = 0;
 
-    int feedback = 0;
+    int altitude_feedback = 0;
     int control = 0;
 
     send_motor_command(0, 0, 0, 0);
 
     while (1)
     {
+        k_msleep(CONTROL_THREAD_PERIOD_MS);
+
         /*
-        * This call must be moved to the sensor thread when the sensor thread is implemented.
-        * The controller thread should only read the feedback from the sensor thread.
-        * 
-        * It could happen that while the sensor thread is writing the sens_fb struct, the controller thread is reading it.
-        * This could lead to a race condition.
-        * 
-        * To avoid this, without blocking the controller thread, the sensor thread must provide a flag to indicate that the
-        * sens_fb struct is being updated, and the controller thread must check this flag before reading the sens_fb struct.
-        * This flag should be implemented for those data that must be read together, not for those data that can be read separately.
+        * Read the feedback produced by the sensors thread. If the altitude is
+        * being updated, keep the previous feedback instead of blocking, so we
+        * never read a partially updated value.
         */
-        sensor_reads(); 
+        if (!sens_fb.altitude.updating)
+        {
+            altitude_feedback = sens_fb.altitude.value;
+        }
 
-        k_msleep(SEND_RATE_MS);
+        control = pid_run(&throttle_pid, altitude_feedback, time);
 
-        feedback = sens_fb.altitude;
+        time += CONTROL_THREAD_PERIOD_MS;
 
-        control = pid_run(&throttle_pid, feedback, time);
-
-        time += SEND_RATE_MS;
-
-        printf("feedback = %d, control = %d\n", feedback, control);
+        printf("feedback = %d, control = %d\n", altitude_feedback, control);
 
         for (int i = 0; i < MOTOR_NUM; i++)
         {
@@ -96,7 +104,9 @@ static void sensors_thread(void *a, void *b, void *c)
 {
     while (1)
     {
-        
+        sensor_reads();
+
+        k_msleep(SENSORS_THREAD_PERIOD_MS);
     }
 }
 
@@ -121,14 +131,23 @@ int main(void)
 
 static void sensor_reads(void)
 {
+    read_altitude();
+    // Add a dedicated read function here for every new sensor.
+}
+
+static void read_altitude(void)
+{
 #ifdef CONFIG_SIMULATION_MODE
     if(uart_read())
     {
-        sens_fb.altitude = atoi(uart_buffer);
+        sens_fb.altitude.updating = true;
+        sens_fb.altitude.value = atoi(uart_buffer);
+        sens_fb.altitude.updating = false;
     }
 #else
-    // Update sens_fb
-    // sens_fb.altitude = read_buff();
+    // sens_fb.altitude.updating = true;
+    // sens_fb.altitude.value = read_buff();
+    // sens_fb.altitude.updating = false;
 #endif  // CONFIG_SIMULATION_MODE
 }
 
