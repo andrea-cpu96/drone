@@ -37,7 +37,7 @@ static void send_motor_command(int m1, int m2, int m3, int m4);
 static int uart_read(void);
 #endif  // CONFIG_SIMULATION_MODE
 
-void flight_thread(void *a, void *b, void *c)
+void controller_thread(void *a, void *b, void *c)
 {
     static uint32_t time = 0;
 
@@ -96,7 +96,7 @@ int main(void)
     esc_init(MOTOR_NUM);
 
     k_thread_create(&flight_tid, flight_stack,
-                    K_THREAD_STACK_SIZEOF(flight_stack), flight_thread, NULL,
+                    K_THREAD_STACK_SIZEOF(flight_stack), controller_thread, NULL,
                     NULL, NULL, PID_THREAD_PRIO, 0, K_NO_WAIT);
 
     return 0;
