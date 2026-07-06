@@ -1,12 +1,10 @@
-#include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 
-#include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
 
 #include "esc.h"
 #include "pid.h"
+#include "sensors.h"
 
 #define REFERENCE_ALTITUDE 100
 
@@ -26,34 +24,11 @@ static struct k_thread controller_tid;
 K_THREAD_STACK_DEFINE(sensors_stack, 2048);
 static struct k_thread sensors_tid;
 
-// A single sensor reading: its value plus a dedicated flag set while the value
-// is being written, so the controller can skip the read instead of blocking and
-// never observe a partially updated value.
-struct sensor_st
-{
-    int value;
-    volatile bool updating;
-};
-
-struct sensor_fb_st
-{
-    struct sensor_st altitude;
-} sens_fb;
-
 pid_handler_t throttle_pid;
 static int motor[MOTOR_NUM] = {0, 0, 0, 0};
 
-const struct device *uart = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
-char uart_buffer[128];
-
-static void sensor_reads(void);
-static void read_altitude(void);
 static void send_motor_command(int m1, int m2, int m3, int m4);
 static void sensors_thread(void *a, void *b, void *c);
-
-#ifdef CONFIG_SIMULATION_MODE
-static int uart_read(void);
-#endif  // CONFIG_SIMULATION_MODE
 
 void controller_thread(void *a, void *b, void *c)
 {
@@ -69,14 +44,11 @@ void controller_thread(void *a, void *b, void *c)
         k_msleep(CONTROL_THREAD_PERIOD_MS);
 
         /*
-        * Read the feedback produced by the sensors thread. If the altitude is
-        * being updated, keep the previous feedback instead of blocking, so we
-        * never read a partially updated value.
+        * Read the latest altitude published by the sensors thread. The value is
+        * a word-sized scalar written with a single store, so the read is atomic
+        * and always returns a complete value.
         */
-        if (!sens_fb.altitude.updating)
-        {
-            altitude_feedback = sens_fb.altitude.value;
-        }
+        altitude_feedback = sensors_read_altitude();
 
         control = pid_run(&throttle_pid, altitude_feedback, time);
 
@@ -108,7 +80,8 @@ static void sensors_thread(void *a, void *b, void *c)
 {
     while (1)
     {
-        sensor_reads();
+        sensors_altitude_process();
+        // Call the process function of every new sensor here.
 
         k_msleep(SENSORS_THREAD_PERIOD_MS);
     }
@@ -132,61 +105,6 @@ int main(void)
 
     return 0;
 }
-
-static void sensor_reads(void)
-{
-    read_altitude();
-    // Add a dedicated read function here for every new sensor.
-}
-
-static void read_altitude(void)
-{
-    sens_fb.altitude.updating = true;
-#ifdef CONFIG_SIMULATION_MODE
-    if(uart_read())
-    {
-        sens_fb.altitude.value = atoi(uart_buffer);
-    }
-#else
-    // sens_fb.altitude.value = read_buff();
-#endif  // CONFIG_SIMULATION_MODE
-    sens_fb.altitude.updating = false;
-}
-
-#ifdef CONFIG_SIMULATION_MODE
-/**
- * @brief Read a line from the console
- *
- */
-static int uart_read(void)
-{
-    int data_ready = 0;
-
-    uint8_t c;
-    uint8_t byte_received = 0;
-
-    memset(uart_buffer, 0, sizeof(uart_buffer));
-
-    while (uart_poll_in(uart, &c) == 0)
-    {
-        if (c == '\n' || c == '\r')
-        {
-            uart_buffer[byte_received] = '\0';
-            byte_received = 0;
-            data_ready = 1;
-        }
-        else
-        {
-            if (byte_received < sizeof(uart_buffer) - 1)
-            {
-                uart_buffer[byte_received] = c;
-                byte_received++;
-            }
-        }
-    }
-    return data_ready;
-}
-#endif  // CONFIG_SIMULATION_MODE
 
 /**
  * @brief Send motor command to the console
