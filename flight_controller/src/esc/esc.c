@@ -5,8 +5,10 @@
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/kernel.h>
 
-#define PWM_PERIOD_NS 1000000
-#define PWM_PULSE_NS 500000
+/* Standard RC servo PWM: 50 Hz frame, throttle encoded as pulse width */
+#define PWM_PERIOD_NS 20000000   /* 20 ms -> 50 Hz */
+#define PWM_MIN_PULSE_NS 1000000 /* 1 ms  -> throttle 0%   (also arm/idle) */
+#define PWM_MAX_PULSE_NS 2000000 /* 2 ms  -> throttle 100% */
 #define CH_NUM_MAX 4
 
 #ifndef CONFIG_SIMULATION_MODE
@@ -34,7 +36,7 @@ esc_status esc_init(int n_ch)
 
     for (int i = 1; i <= esc_ch_num; i++)
     {
-        pwm_ok = pwm_set(esc_pwm, i, PWM_PERIOD_NS, PWM_PULSE_NS, 0);
+        pwm_ok = pwm_set(esc_pwm, i, PWM_PERIOD_NS, PWM_MIN_PULSE_NS, 0);
         if (pwm_ok < 0)
         {
             printk("failed to set idle (%d)\n", pwm_ok);
@@ -50,7 +52,7 @@ esc_status esc_init(int n_ch)
 esc_status esc_set(float *m)
 {
 #ifndef CONFIG_SIMULATION_MODE
-    float speed_perc = 0.0f;
+    float pulse_ns = 0.0f;
 
     for (int i = 0; i < esc_ch_num; i++)
     {
@@ -62,8 +64,9 @@ esc_status esc_set(float *m)
 
     for (int i = 0; i < esc_ch_num; i++)
     {
-        speed_perc = (m[i] * (float)PWM_PERIOD_NS);
-        pwm_set(esc_pwm, i+1, PWM_PERIOD_NS, (int)speed_perc, 0);
+        pulse_ns = (float)PWM_MIN_PULSE_NS +
+                   (m[i] * (float)(PWM_MAX_PULSE_NS - PWM_MIN_PULSE_NS));
+        pwm_set(esc_pwm, i+1, PWM_PERIOD_NS, (int)pulse_ns, 0);
     }
 
     return ESC_OK;
