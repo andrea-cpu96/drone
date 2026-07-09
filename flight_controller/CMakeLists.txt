@@ -9,7 +9,7 @@ target_sources(app PRIVATE src/main.c
                            src/pid/pid.c
                            src/esc/esc.c
                            src/sensors/sensors.c
-                           src/sensors/barometer/ms5611.c
+                           # src/sensors/barometer/ms5611.c
                            src/comm/i2c.c
                            src/comm/uart.c)
 
