@@ -8,9 +8,11 @@ project(flight_controller)
 target_sources(app PRIVATE src/main.c
                            src/pid/pid.c
                            src/esc/esc.c
-                           src/sensors/sensors.c)
+                           src/sensors/sensors.c
+                           src/sensors/barometer/ms5611.c)
 
 target_include_directories(app PRIVATE src
                                        src/pid
                                        src/esc
-                                       src/sensors)
+                                       src/sensors
+                                       src/sensors/barometer)
