@@ -7,7 +7,8 @@
 
 / {
     aliases {
-		esc-controller = &pwm1;
+		esc-controller  = &pwm1;
+		i2c-interface = &i2c1;
     };
 };
 
