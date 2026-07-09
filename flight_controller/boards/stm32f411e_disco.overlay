@@ -3,6 +3,8 @@
  *
  */
 
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
 / {
     aliases {
 		esc-controller = &pwm1;
@@ -23,4 +25,21 @@
 			     &tim1_ch4_pe14>;
 		pinctrl-names = "default";
 	};
+};
+
+/* I2C1 bus (SCL = PB6, SDA = PB9). Attach sensor devices as child nodes. */
+&i2c1 {
+	pinctrl-0 = <&i2c1_scl_pb6 &i2c1_sda_pb9>;
+	pinctrl-names = "default";
+	clock-frequency = <I2C_BITRATE_FAST>;
+	status = "okay";
+
+	/*
+	 * Example: add an I2C sensor here, e.g. a barometer for altitude.
+	 *
+	 * barometer@76 {
+	 *     compatible = "bosch,bme280";
+	 *     reg = <0x76>;
+	 * };
+	 */
 };
