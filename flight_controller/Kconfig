@@ -10,4 +10,51 @@ config SIMULATION_MODE
 	  to the console so the host-side drone simulation can read them.
 	  Disable this on real hardware where the motors are driven directly.
 
+config ESC_VERIFY_MODE
+	bool "Enable ESC verification ramp"
+	default n
+	help
+	  Enable a temporary throttle ramp for ESC verification tests.
+	  When disabled, the application uses the standard fixed throttle output.
+
+config ESC_VERIFY_DELAY_MS
+	int "ESC verification startup delay in milliseconds"
+	default 10000
+	range 0 600000
+	depends on ESC_VERIFY_MODE
+	help
+	  Delay before the ESC verification throttle ramp starts.
+
+config ESC_VERIFY_INTERVAL_MS
+	int "ESC verification ramp update interval in milliseconds"
+	default 200
+	range 0 600000
+	depends on ESC_VERIFY_MODE
+	help
+	  Time between each throttle increment during the ESC verification ramp.
+
+config ESC_VERIFY_START_THROTTLE_PROMILLE
+	int "ESC verification initial throttle in permille"
+	default 150
+	range 0 1000
+	depends on ESC_VERIFY_MODE
+	help
+	  Initial throttle value used by the ESC verification ramp.
+
+config ESC_VERIFY_STEP_PROMILLE
+	int "ESC verification throttle step in permille"
+	default 20
+	range 0 1000
+	depends on ESC_VERIFY_MODE
+	help
+	  Increment step used by the ESC verification ramp.
+
+config ESC_VERIFY_MAX_THROTTLE_PROMILLE
+	int "ESC verification maximum throttle in permille"
+	default 500
+	range 0 1000
+	depends on ESC_VERIFY_MODE
+	help
+	  Maximum throttle value reached by the ESC verification ramp.
+
 source "Kconfig.zephyr"
