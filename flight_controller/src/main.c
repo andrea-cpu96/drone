@@ -80,8 +80,6 @@ void controller_thread(void *a, void *b, void *c)
         }
 
         send_motor_command(motor[0], motor[1], motor[2], motor[3]);
-
-        fflush(stdout);
     }
 }
 
@@ -99,7 +97,6 @@ static void sensors_thread(void *a, void *b, void *c)
 int main(void)
 {
     printf("Controller thread starting...\n");
-    fflush(stdout);
 
     pid_init(&throttle_pid, REFERENCE_ALTITUDE, 21, 5, 8);
     esc_init(MOTOR_NUM);
@@ -169,6 +166,8 @@ static void send_motor_command(int m1, int m2, int m3, int m4)
 #ifdef CONFIG_SIMULATION_MODE
     printf("%d.%03d %d.%03d %d.%03d %d.%03d\n", m1 / 1000, m1 % 1000, m2 / 1000,
            m2 % 1000, m3 / 1000, m3 % 1000, m4 / 1000, m4 % 1000);
+           
+    fflush(stdout);
 #else
     float m[MOTOR_NUM] = {0.0f};
 
