@@ -6,7 +6,7 @@
 #include <zephyr/kernel.h>
 
 /* Standard RC servo PWM: 50 Hz frame, throttle encoded as pulse width */
-#define PWM_PERIOD_NS 20000000   /* 20 ms -> 50 Hz */
+#define PWM_PERIOD_NS 2500000   /* 2.5 ms -> 400 Hz */
 #define PWM_MIN_PULSE_NS 1000000 /* 1 ms  -> throttle 0%   (also arm/idle) */
 #define PWM_MAX_PULSE_NS 2000000 /* 2 ms  -> throttle 100% */
 #define CH_NUM_MAX 4
