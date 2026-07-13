@@ -2,6 +2,13 @@
 #define SENSORS_H
 
 /**
+ * @brief Initialize all sensors (e.g. the MS5611 barometer).
+ *
+ * Meant to be called once at startup, before the sensors thread starts.
+ */
+void sensors_init(void);
+
+/**
  * @brief Read the altitude source (real sensor, or the UART in simulation mode)
  *        and publish the latest value.
  *
