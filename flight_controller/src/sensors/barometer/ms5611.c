@@ -12,6 +12,8 @@
 
 #include "ms5611.h"
 
+#include <zephyr/kernel.h>
+
 /**
  * The header "i2c.h" has to be implemented for your own platform to
  * conform the following protocol :
@@ -303,7 +305,7 @@ extern "C"
 
         status = ms5611_write_command(cmd);
         // delay conversion depending on resolution
-        delay_ms(conversion_time[(cmd & MS5611_CONVERSION_OSR_MASK) / 2] / 1000);
+        k_msleep(conversion_time[(cmd & MS5611_CONVERSION_OSR_MASK) / 2] / 1000);
         if (status != ms5611_status_ok)
             return status;
 
