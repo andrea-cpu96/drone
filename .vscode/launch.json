@@ -25,9 +25,9 @@
             ],
             // Zephyr SDK toolchain (arm-zephyr-eabi-gdb). Adjust the version to match your SDK.
             "toolchainPrefix": "arm-zephyr-eabi",
-            "armToolchainPath": "${userHome}/zephyr-sdk-0.17.0/arm-zephyr-eabi/bin",
+            "armToolchainPath": "${userHome}/zephyr-sdk-1.0.1/gnu/arm-zephyr-eabi/bin",
             // If OpenOCD is NOT on PATH, uncomment and point to the SDK's copy:
-            // "serverpath": "${userHome}/zephyr-sdk-0.17.0/sysroots/x86_64-pokysdk-linux/usr/bin/openocd",
+            "serverpath": "${userHome}/zephyr-sdk-1.0.1/hosttools/sysroots/x86_64-pokysdk-linux/usr/bin/openocd",
             // Optional: STM32F411 SVD for the peripheral (register) view.
             // "svdFile": "${workspaceFolder}/.vscode/STM32F411.svd",
             "runToEntryPoint": "main",
@@ -48,7 +48,7 @@
                 "target/stm32f4x.cfg"
             ],
             "toolchainPrefix": "arm-zephyr-eabi",
-            "armToolchainPath": "${userHome}/zephyr-sdk-0.17.0/arm-zephyr-eabi/bin",
+            "armToolchainPath": "${userHome}/zephyr-sdk-1.0.1/gnu/arm-zephyr-eabi/bin",
             "showDevDebugOutput": "none"
         }
     ]
