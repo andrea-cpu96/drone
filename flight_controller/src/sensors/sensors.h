@@ -25,4 +25,4 @@ void sensors_altitude_process(void);
  */
 int sensors_read_altitude(void);
 
-#endif /* SENSORS_H */
+#endif // SENSORS_H

@@ -12,10 +12,10 @@
     };
 };
 
-/* Four ESC PWM outputs on TIM1 (PE9/PE11/PE13/PE14). */
+// Four ESC PWM outputs on TIM1 (PE9/PE11/PE13/PE14).
 &timers1 {
 	compatible = "st,stm32-timers";
-	st,prescaler = <95>;   /* 96 MHz / (95 + 1) = 1 MHz -> 1 us per tick */
+	st,prescaler = <95>;   // 96 MHz / (95 + 1) = 1 MHz -> 1 us per tick
 	status = "okay";
 
 	pwm1: pwm {
@@ -28,7 +28,7 @@
 	};
 };
 
-/* I2C1 bus (SCL = PB6, SDA = PB9). Attach sensor devices as child nodes. */
+// I2C1 bus (SCL = PB6, SDA = PB9). Attach sensor devices as child nodes.
 &i2c1 {
 	pinctrl-0 = <&i2c1_scl_pb6 &i2c1_sda_pb9>;
 	pinctrl-names = "default";

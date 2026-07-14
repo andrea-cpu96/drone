@@ -44,4 +44,4 @@ int uart_read(void)
     return data_ready;
 }
 
-#endif /* CONFIG_SIMULATION_MODE */
+#endif // CONFIG_SIMULATION_MODE

@@ -101,7 +101,7 @@ int main(void)
     pid_init(&throttle_pid, REFERENCE_ALTITUDE, 21, 5, 8);
     esc_init(MOTOR_NUM);
 
-    /* Initialize sensors (barometer, etc.) and perform an initial read */
+    // Initialize sensors (barometer, etc.) and perform an initial read
     sensors_init();
 
     k_thread_create(&controller_tid, controller_stack,

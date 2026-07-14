@@ -17,11 +17,11 @@ enum status_code {
 };
 
 struct i2c_master_packet {
-	/* Address to slave device */
+	// Address to slave device
 	uint16_t address;
-	/* Length of data array */
+	// Length of data array
 	uint16_t data_length;
-	/* Data array containing all data to be transferred */
+	// Data array containing all data to be transferred
 	uint8_t *data;
 };
 
@@ -30,4 +30,4 @@ enum status_code i2c_master_write_packet_wait(struct i2c_master_packet *const pa
 enum status_code i2c_master_write_packet_wait_no_stop(struct i2c_master_packet *const packet);
 enum status_code i2c_master_read_packet_wait(struct i2c_master_packet *const packet);
 
-#endif /* I2C_H */
+#endif // I2C_H
