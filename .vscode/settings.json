@@ -1,0 +1,9 @@
+{
+    // Show variables in their natural (decimal/hex) format while debugging.
+    "cortex-debug.variableUseNaturalFormat": true,
+    // Use Zephyr's generated compile database for accurate C IntelliSense.
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/flight_controller/build/compile_commands.json",
+    "files.associations": {
+        "*.overlay": "dts"
+    }
+}

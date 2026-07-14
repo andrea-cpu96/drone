@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "marus25.cortex-debug",
+        "ms-vscode.cpptools",
+        // GUI helper to attach the ST-LINK USB device to WSL.
+        // NOTE: requires usbipd-win installed on Windows (winget install usbipd);
+        // the extension only wraps the usbipd bind/attach commands, it is not a replacement.
+        "thecreativedodo.usbip-connect"
+    ]
+}

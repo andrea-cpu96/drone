@@ -1,0 +1,61 @@
+{
+    // Build / flash tasks for the STM32F411E-DISCO target.
+    // Each task sources the Zephyr Python venv and zephyr-env.sh (same as scripts/*.sh),
+    // then runs west. Intended to run inside WSL (bash).
+    "version": "2.0.0",
+    "options": {
+        "shell": {
+            "executable": "bash",
+            "args": [
+                "-c"
+            ]
+        }
+    },
+    "tasks": [
+        {
+            "label": "West Build (STM32F411E-DISCO)",
+            "detail": "Incremental west build for stm32f411e_disco.",
+            "type": "shell",
+            "command": "source \"$HOME/zephyrproject/.venv/bin/activate\" && source \"$HOME/zephyrproject/zephyr/zephyr-env.sh\" && cd \"${workspaceFolder}/flight_controller\" && west build -b stm32f411e_disco",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "West Build (clean rebuild)",
+            "detail": "Full clean rebuild via scripts/build_stm32.sh (rm -rf build).",
+            "type": "shell",
+            "command": "bash \"${workspaceFolder}/scripts/build_stm32.sh\"",
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "West Flash (STM32F411E-DISCO)",
+            "detail": "Flash the built firmware to the board via west flash (OpenOCD runner).",
+            "type": "shell",
+            "command": "source \"$HOME/zephyrproject/.venv/bin/activate\" && source \"$HOME/zephyrproject/zephyr/zephyr-env.sh\" && cd \"${workspaceFolder}/flight_controller\" && west flash",
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
+}

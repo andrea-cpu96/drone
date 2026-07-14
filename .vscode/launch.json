@@ -1,0 +1,55 @@
+{
+    // Debug the flight_controller firmware on the STM32F411E-DISCO board.
+    // Backend: Cortex-Debug + OpenOCD (onboard ST-LINK/V2).
+    //
+    // Requirements (on the WSL machine):
+    //   - VS Code extension: marus25.cortex-debug
+    //   - OpenOCD on PATH        -> sudo apt install openocd   (or use the SDK build, see "serverpath" below)
+    //   - Zephyr SDK installed   -> provides arm-zephyr-eabi-gdb
+    //
+    // IMPORTANT: set the correct Zephyr SDK version below (armToolchainPath).
+    //   Find it on the WSL box with:  ls -d ~/zephyr-sdk-*
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug STM32F411E-DISCO (OpenOCD)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/flight_controller/build/zephyr/zephyr.elf",
+            "device": "STM32F411VE",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
+            ],
+            // Zephyr SDK toolchain (arm-zephyr-eabi-gdb). Adjust the version to match your SDK.
+            "toolchainPrefix": "arm-zephyr-eabi",
+            "armToolchainPath": "${userHome}/zephyr-sdk-0.17.0/arm-zephyr-eabi/bin",
+            // If OpenOCD is NOT on PATH, uncomment and point to the SDK's copy:
+            // "serverpath": "${userHome}/zephyr-sdk-0.17.0/sysroots/x86_64-pokysdk-linux/usr/bin/openocd",
+            // Optional: STM32F411 SVD for the peripheral (register) view.
+            // "svdFile": "${workspaceFolder}/.vscode/STM32F411.svd",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "West Build (STM32F411E-DISCO)",
+            "showDevDebugOutput": "none"
+        },
+        {
+            // Attach to a target that is already running (no flash, no reset).
+            "name": "Attach STM32F411E-DISCO (OpenOCD)",
+            "type": "cortex-debug",
+            "request": "attach",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/flight_controller/build/zephyr/zephyr.elf",
+            "device": "STM32F411VE",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
+            ],
+            "toolchainPrefix": "arm-zephyr-eabi",
+            "armToolchainPath": "${userHome}/zephyr-sdk-0.17.0/arm-zephyr-eabi/bin",
+            "showDevDebugOutput": "none"
+        }
+    ]
+}
