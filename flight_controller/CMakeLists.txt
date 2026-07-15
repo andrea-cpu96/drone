@@ -10,6 +10,7 @@ target_sources(app PRIVATE src/main.c
                            src/esc/esc.c
                            src/sensors/sensors.c
                            src/sensors/barometer/ms5611.c
+                           src/sensors/tof/vl53l1x.c
                            src/comm/i2c.c
                            src/comm/uart.c)
 
@@ -18,4 +19,5 @@ target_include_directories(app PRIVATE src
                                        src/esc
                                        src/sensors
                                        src/sensors/barometer
+                                       src/sensors/tof
                                        src/comm)

@@ -35,14 +35,14 @@
 	clock-frequency = <I2C_BITRATE_FAST>;
 	status = "okay";
 
-	/*
-	 * Example: add an I2C sensor here, e.g. a barometer for altitude.
-	 *
-	 * barometer@76 {
-	 *     compatible = "bosch,bme280";
-	 *     reg = <0x76>;
-	 * };
-	 */
+	// VL53L1X time-of-flight distance sensor (default I2C address 0x29).
+	tof: vl53l1x@29 {
+		compatible = "st,vl53l1x";
+		reg = <0x29>;
+		// Optional pins (uncomment if wired; needs gpio dt-bindings include):
+		// xshut-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
+		// int-gpios   = <&gpiob 4 GPIO_ACTIVE_LOW>;
+	};
 };
 
 /*

@@ -25,4 +25,21 @@ void sensors_altitude_process(void);
  */
 int sensors_read_altitude(void);
 
+/**
+ * @brief Read the VL53L1X time-of-flight sensor and publish the latest distance.
+ *
+ * Meant to be called periodically by the sensors thread.
+ */
+void sensors_distance_process(void);
+
+/**
+ * @brief Get the latest distance value (millimeters) published by
+ *        sensors_distance_process().
+ *
+ * Meant to be called by the control thread.
+ *
+ * @return int latest distance value in millimeters
+ */
+int sensors_read_distance(void);
+
 #endif // SENSORS_H
