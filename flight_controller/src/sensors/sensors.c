@@ -21,6 +21,10 @@
 
 // Number of altitude samples averaged at init to capture the ground reference.
 #define BAROMETER_ZERO_SAMPLES 10
+
+// Below this altitude (m) the barometer is unreliable near the ground, so the
+// ToF distance is used as the altitude instead.
+#define ALTITUDE_TOF_THRESHOLD_M 3
 #endif  // CONFIG_SIMULATION_MODE
 
 /*
@@ -35,8 +39,7 @@
  */
 struct sensor_samples_st
 {
-    volatile int altitude_sensor;
-    volatile int distance_sensor;
+    volatile int altitude_sensor;  // meters
     // Add a field here for every new sensor.
 };
 
@@ -49,12 +52,12 @@ static float barometer_altitude_zero = 0.0f;
 #endif  // CONFIG_SIMULATION_MODE
 
 static void barometer_init(void);
-static int barometer_read(void);
-#ifndef CONFIG_SIMULATION_MODE
-static bool barometer_read_absolute(float *altitude_m);
-#endif  // CONFIG_SIMULATION_MODE
 static void tof_init(void);
-static int tof_read(void);
+#ifndef CONFIG_SIMULATION_MODE
+static int barometer_read(void);
+static bool barometer_read_absolute(float *altitude_m);
+static bool tof_read(int *altitude_m);
+#endif  // CONFIG_SIMULATION_MODE
 
 void sensors_init(void)
 {
@@ -68,26 +71,37 @@ void sensors_altitude_process(void)
 #ifdef CONFIG_SIMULATION_MODE
     if (uart_read())
     {
+        // The simulator sends the altitude in meters.
         sensor_sample.altitude_sensor = atoi(uart_buffer);
     }
-#endif  // CONFIG_SIMULATION_MODE
+#else
+    // Near the ground the barometer is unreliable, so below the threshold the
+    // more accurate ToF distance is used as the altitude (both in meters).
+    int barometer_m = barometer_read();
 
-    sensor_sample.altitude_sensor = barometer_read();
+    if (barometer_m < ALTITUDE_TOF_THRESHOLD_M)
+    {
+        int tof_m;
+
+        if (tof_read(&tof_m))
+        {
+            sensor_sample.altitude_sensor = tof_m;
+        }
+        else
+        {
+            sensor_sample.altitude_sensor = barometer_m;
+        }
+    }
+    else
+    {
+        sensor_sample.altitude_sensor = barometer_m;
+    }
+#endif  // CONFIG_SIMULATION_MODE
 }
 
 int sensors_read_altitude(void)
 {
     return sensor_sample.altitude_sensor;
-}
-
-void sensors_distance_process(void)
-{
-    sensor_sample.distance_sensor = tof_read();
-}
-
-int sensors_read_distance(void)
-{
-    return sensor_sample.distance_sensor;
 }
 
 /*
@@ -138,15 +152,13 @@ static void barometer_init(void)
 #endif  // CONFIG_SIMULATION_MODE
 }
 
+#ifndef CONFIG_SIMULATION_MODE
 /*
- * Read the MS5611 and convert the measured pressure into an altitude in meters,
- * relative to the ground reference captured at init. The last published altitude
- * is kept on a read error. Does nothing in simulation mode, where the altitude
- * comes from the UART.
+ * Read the MS5611 and convert the measured pressure into a takeoff-relative
+ * altitude in meters. The last published altitude is kept on a read error.
  */
 static int barometer_read(void)
 {
-#ifndef CONFIG_SIMULATION_MODE
     float altitude;
 
     if (!barometer_read_absolute(&altitude))
@@ -154,15 +166,10 @@ static int barometer_read(void)
         return sensor_sample.altitude_sensor;
     }
 
-    // Subtract the ground reference captured at init so the result is relative
-    // to takeoff.
+    // Takeoff-relative altitude, in meters.
     return (int)(altitude - barometer_altitude_zero);
-#else
-    return sensor_sample.altitude_sensor;
-#endif  // CONFIG_SIMULATION_MODE
 }
 
-#ifndef CONFIG_SIMULATION_MODE
 /*
  * Read the MS5611 and compute the absolute altitude in meters above sea level.
  * Returns false on an I2C/read error.
@@ -197,23 +204,23 @@ static void tof_init(void)
 #endif  // CONFIG_SIMULATION_MODE
 }
 
-/*
- * Read the VL53L1X and return the measured distance in millimeters. The last
- * published distance is kept on a read error. Does nothing in simulation mode,
- * where there is no distance source.
- */
-static int tof_read(void)
-{
 #ifndef CONFIG_SIMULATION_MODE
+/*
+ * Read the VL53L1X and return the measured distance in meters via the out
+ * parameter. Returns false on a read error; the caller falls back to the
+ * barometer in that case.
+ */
+static bool tof_read(int *altitude_m)
+{
     int distance_mm;
 
     if (vl53l1x_read_distance(&distance_mm) != VL53L1X_STATUS_OK)
     {
-        return sensor_sample.distance_sensor;
+        return false;
     }
 
-    return distance_mm;
-#else
-    return sensor_sample.distance_sensor;
-#endif  // CONFIG_SIMULATION_MODE
+    // The driver reports millimeters; convert to meters.
+    *altitude_m = distance_mm / 1000;
+    return true;
 }
+#endif  // CONFIG_SIMULATION_MODE
