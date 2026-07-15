@@ -43,7 +43,7 @@ void controller_thread(void *a, void *b, void *c)
 {
     static uint32_t time = 0;
 
-    int altitude_feedback = 0;
+    float altitude_feedback = 0.0f;
     int control = 0;
 
     send_motor_command(0, 0, 0, 0);
@@ -67,7 +67,7 @@ void controller_thread(void *a, void *b, void *c)
          * These kind of prints must be moved in a dedicated logging thread, to avoid
          * blocking the control loop.
          */
-        printf("feedback = %d, control = %d\n", altitude_feedback, control);
+        printf("feedback = %.3f, control = %d\n", altitude_feedback, control);
 
         for (int i = 0; i < MOTOR_NUM; i++)
         {

@@ -1,15 +1,15 @@
 #include "pid.h"
 
-static int32_t pid_p(pid_handler_t *pid, int32_t e);
-static int32_t pid_i(pid_handler_t *pid, int e, int dt_ms);
-static int32_t pid_d(pid_handler_t *pid, int e, int dt_ms);
+static int32_t pid_p(pid_handler_t *pid, float e);
+static int32_t pid_i(pid_handler_t *pid, float e, int dt_ms);
+static int32_t pid_d(pid_handler_t *pid, float e, int dt_ms);
 
 /**
  * @brief PID initialization
  *
  * @param hpid
  */
-void pid_init(pid_handler_t *pid, int32_t ref, float kp, float ki, float kd)
+void pid_init(pid_handler_t *pid, float ref, float kp, float ki, float kd)
 {
     pid->ref = ref;
     pid->kp = kp;
@@ -27,7 +27,7 @@ void pid_init(pid_handler_t *pid, int32_t ref, float kp, float ki, float kd)
  * @param t
  * @return int32_t
  */
-int pid_run(pid_handler_t *pid, int32_t fb, int32_t t)
+int pid_run(pid_handler_t *pid, float fb, int32_t t)
 {
     int32_t control_out = 0;
 
@@ -35,7 +35,7 @@ int pid_run(pid_handler_t *pid, int32_t fb, int32_t t)
     int dt = (t - pid->t_prev);
 
     // Evaluate the error
-    int32_t e = (pid->ref - fb);
+    float e = pid->ref - fb;
 
     // Proportional component
     control_out = pid_p(pid, e);
@@ -62,7 +62,7 @@ int pid_run(pid_handler_t *pid, int32_t fb, int32_t t)
  *
  * @param new_ref
  */
-void pid_set_ref(pid_handler_t *pid, int32_t new_ref)
+void pid_set_ref(pid_handler_t *pid, float new_ref)
 {
     pid->ref = new_ref;
 }
@@ -73,9 +73,9 @@ void pid_set_ref(pid_handler_t *pid, int32_t new_ref)
  * @param e
  * @return int32_t
  */
-static int32_t pid_p(pid_handler_t *pid, int32_t e)
+static int32_t pid_p(pid_handler_t *pid, float e)
 {
-    return (pid->kp * e);
+    return (int32_t)(pid->kp * e);
 }
 
 /**
@@ -84,11 +84,11 @@ static int32_t pid_p(pid_handler_t *pid, int32_t e)
  * @param e
  * @return int32_t
  */
-static int32_t pid_i(pid_handler_t *pid, int e, int dt_ms)
+static int32_t pid_i(pid_handler_t *pid, float e, int dt_ms)
 {
-    pid->integral += ((float)e * (float)dt_ms / 1000.0f);
+    pid->integral += e * ((float)dt_ms / 1000.0f);
 
-    return (pid->ki * pid->integral);
+    return (int32_t)(pid->ki * pid->integral);
 }
 
 /**
@@ -97,12 +97,12 @@ static int32_t pid_i(pid_handler_t *pid, int e, int dt_ms)
  * @param e
  * @return int32_t
  */
-static int32_t pid_d(pid_handler_t *pid, int e, int dt_ms)
+static int32_t pid_d(pid_handler_t *pid, float e, int dt_ms)
 {
     if (dt_ms <= 0)
         return 0;
 
-    float de = (float)(e - pid->e_prev);
+    float de = e - pid->e_prev;
     float d = pid->kd * (de * 1000.0f / (float)dt_ms);
 
     return (int32_t)d;

@@ -21,8 +21,8 @@ void sensors_altitude_process(void);
  *
  * Meant to be called by the control thread.
  *
- * @return int latest altitude value in meters
+ * @return float latest altitude value in meters
  */
-int sensors_read_altitude(void);
+float sensors_read_altitude(void);
 
 #endif // SENSORS_H

@@ -39,7 +39,7 @@
  */
 struct sensor_samples_st
 {
-    volatile int altitude_sensor;  // meters
+    volatile float altitude_sensor;  // meters
     // Add a field here for every new sensor.
 };
 
@@ -54,9 +54,9 @@ static float barometer_altitude_zero = 0.0f;
 static void barometer_init(void);
 static void tof_init(void);
 #ifndef CONFIG_SIMULATION_MODE
-static int barometer_read(void);
+static float barometer_read(void);
 static bool barometer_read_absolute(float *altitude_m);
-static bool tof_read(int *altitude_m);
+static bool tof_read(float *altitude_m);
 #endif  // CONFIG_SIMULATION_MODE
 
 void sensors_init(void)
@@ -72,16 +72,16 @@ void sensors_altitude_process(void)
     if (uart_read())
     {
         // The simulator sends the altitude in meters.
-        sensor_sample.altitude_sensor = atoi(uart_buffer);
+        sensor_sample.altitude_sensor = (float)atof(uart_buffer);
     }
 #else
     // Near the ground the barometer is unreliable, so below the threshold the
     // more accurate ToF distance is used as the altitude (both in meters).
-    int barometer_m = barometer_read();
+    float barometer_m = barometer_read();
 
     if (barometer_m < ALTITUDE_TOF_THRESHOLD_M)
     {
-        int tof_m;
+        float tof_m;
 
         if (tof_read(&tof_m))
         {
@@ -99,7 +99,7 @@ void sensors_altitude_process(void)
 #endif  // CONFIG_SIMULATION_MODE
 }
 
-int sensors_read_altitude(void)
+float sensors_read_altitude(void)
 {
     return sensor_sample.altitude_sensor;
 }
@@ -157,7 +157,7 @@ static void barometer_init(void)
  * Read the MS5611 and convert the measured pressure into a takeoff-relative
  * altitude in meters. The last published altitude is kept on a read error.
  */
-static int barometer_read(void)
+static float barometer_read(void)
 {
     float altitude;
 
@@ -167,7 +167,7 @@ static int barometer_read(void)
     }
 
     // Takeoff-relative altitude, in meters.
-    return (int)(altitude - barometer_altitude_zero);
+    return altitude - barometer_altitude_zero;
 }
 
 /*
@@ -210,7 +210,7 @@ static void tof_init(void)
  * parameter. Returns false on a read error; the caller falls back to the
  * barometer in that case.
  */
-static bool tof_read(int *altitude_m)
+static bool tof_read(float *altitude_m)
 {
     int distance_mm;
 
@@ -220,7 +220,7 @@ static bool tof_read(int *altitude_m)
     }
 
     // The driver reports millimeters; convert to meters.
-    *altitude_m = distance_mm / 1000;
+    *altitude_m = distance_mm / 1000.0f;
     return true;
 }
 #endif  // CONFIG_SIMULATION_MODE
