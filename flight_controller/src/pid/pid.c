@@ -1,5 +1,7 @@
 #include "pid.h"
 
+#include "log.h"
+
 static int32_t pid_p(pid_handler_t *pid, float e);
 static int32_t pid_i(pid_handler_t *pid, float e, int dt_ms);
 static int32_t pid_d(pid_handler_t *pid, float e, int dt_ms);
@@ -18,6 +20,8 @@ void pid_init(pid_handler_t *pid, float ref, float kp, float ki, float kd)
     pid->integral = 0.0f;
     pid->e_prev = 0;
     pid->t_prev = 0;
+
+    log_print("PID initialized (ref=%.1f kp=%.1f ki=%.1f kd=%.1f)\n", ref, kp, ki, kd);
 }
 
 /**
@@ -44,7 +48,7 @@ int pid_run(pid_handler_t *pid, float fb, int32_t t)
     control_out += pid_i(pid, e, dt);
 
     // Derivative component
-    if(dt > 0)
+    if (dt > 0)
         control_out += pid_d(pid, e, dt);
 
     // Save the previous error

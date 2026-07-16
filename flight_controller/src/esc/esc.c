@@ -1,14 +1,14 @@
 #include "esc.h"
 
-#include <stdio.h>
+#include "log.h"
 
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/kernel.h>
 
 // Standard RC servo PWM: 400 Hz frame, throttle encoded as pulse width
-#define PWM_PERIOD_NS 2500000   // 2.5 ms -> 400 Hz
-#define PWM_MIN_PULSE_NS 1000000 // 1 ms  -> throttle 0%   (also arm/idle)
-#define PWM_MAX_PULSE_NS 2000000 // 2 ms  -> throttle 100%
+#define PWM_PERIOD_NS 2500000     // 2.5 ms -> 400 Hz
+#define PWM_MIN_PULSE_NS 1000000  // 1 ms  -> throttle 0%   (also arm/idle)
+#define PWM_MAX_PULSE_NS 2000000  // 2 ms  -> throttle 100%
 #define CH_NUM_MAX 4
 
 #ifndef CONFIG_SIMULATION_MODE
@@ -25,12 +25,13 @@ esc_status esc_init(int n_ch)
 
     if (esc_ch_num > CH_NUM_MAX)
     {
+        log_print("ESC channel count %d exceeds max %d\n", n_ch, CH_NUM_MAX);
         return ESC_ERR;
     }
 
     if (!device_is_ready(esc_pwm))
     {
-        printf("ESC device not ready\n");
+        log_print("ESC device not ready\n");
         return ESC_ERR;
     }
 
@@ -39,10 +40,12 @@ esc_status esc_init(int n_ch)
         pwm_ok = pwm_set(esc_pwm, i, PWM_PERIOD_NS, PWM_MIN_PULSE_NS, 0);
         if (pwm_ok < 0)
         {
-            printk("failed to set idle (%d)\n", pwm_ok);
+            log_print("failed to set idle (%d)\n", pwm_ok);
             return ESC_ERR;
         }
     }
+
+    log_print("ESC initialized (%d channels)\n", esc_ch_num);
     return ESC_OK;
 #else
     return ESC_OK;
@@ -66,7 +69,7 @@ esc_status esc_set(float *m)
     {
         pulse_ns = (float)PWM_MIN_PULSE_NS +
                    (m[i] * (float)(PWM_MAX_PULSE_NS - PWM_MIN_PULSE_NS));
-        pwm_set(esc_pwm, i+1, PWM_PERIOD_NS, (int)pulse_ns, 0);
+        pwm_set(esc_pwm, i + 1, PWM_PERIOD_NS, (int)pulse_ns, 0);
     }
 
     return ESC_OK;

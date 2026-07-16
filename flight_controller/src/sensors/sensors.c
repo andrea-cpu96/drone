@@ -1,30 +1,30 @@
 #include "sensors.h"
 
 #include "i2c.h"
+#include "log.h"
 
 #ifdef CONFIG_SIMULATION_MODE
-#include <stdint.h>
-#include <stdlib.h>
+#    include <stdint.h>
+#    include <stdlib.h>
 
-#include "uart.h"
+#    include "uart.h"
 #else
-#include <math.h>
-#include <stdio.h>
+#    include <math.h>
 
-#include <zephyr/kernel.h>
+#    include <zephyr/kernel.h>
 
-#include "ms5611.h"
-#include "vl53l1x.h"
+#    include "ms5611.h"
+#    include "vl53l1x.h"
 
 // Reference sea-level pressure (hPa) for the barometric altitude formula.
-#define SEA_LEVEL_PRESSURE_HPA 1013.25f
+#    define SEA_LEVEL_PRESSURE_HPA 1013.25f
 
 // Number of altitude samples averaged at init to capture the ground reference.
-#define BAROMETER_ZERO_SAMPLES 10
+#    define BAROMETER_ZERO_SAMPLES 10
 
 // Below this altitude (m) the barometer is unreliable near the ground, so the
 // ToF distance is used as the altitude instead.
-#define ALTITUDE_TOF_THRESHOLD_M 3
+#    define ALTITUDE_TOF_THRESHOLD_M 3
 #endif  // CONFIG_SIMULATION_MODE
 
 /*
@@ -118,13 +118,13 @@ static void barometer_init(void)
 
     if (!ms5611_is_connected())
     {
-        printf("MS5611 barometer not detected\n");
+        log_print("MS5611 barometer not detected\n");
         return;
     }
 
     if (ms5611_reset() != ms5611_status_ok)
     {
-        printf("MS5611 reset failed\n");
+        log_print("MS5611 reset failed\n");
         return;
     }
 
@@ -141,7 +141,7 @@ static void barometer_init(void)
 
         if (!barometer_read_absolute(&altitude))
         {
-            printf("MS5611 zero calibration failed\n");
+            log_print("MS5611 zero calibration failed\n");
             return;
         }
 
@@ -149,6 +149,8 @@ static void barometer_init(void)
     }
 
     barometer_altitude_zero = altitude_sum / BAROMETER_ZERO_SAMPLES;
+
+    log_print("MS5611 barometer ready (zero = %.2f m)\n", barometer_altitude_zero);
 #endif  // CONFIG_SIMULATION_MODE
 }
 
@@ -199,7 +201,11 @@ static void tof_init(void)
 #ifndef CONFIG_SIMULATION_MODE
     if (vl53l1x_init() != VL53L1X_STATUS_OK)
     {
-        printf("VL53L1X ToF sensor not detected\n");
+        log_print("VL53L1X ToF sensor not detected\n");
+    }
+    else
+    {
+        log_print("VL53L1X ToF ready\n");
     }
 #endif  // CONFIG_SIMULATION_MODE
 }

@@ -11,6 +11,6 @@ extern char uart_buffer[128];
  */
 int uart_read(void);
 
-#endif // CONFIG_SIMULATION_MODE
+#endif  // CONFIG_SIMULATION_MODE
 
-#endif // UART_H
+#endif  // UART_H

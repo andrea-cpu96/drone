@@ -3,6 +3,7 @@
 #include <zephyr/kernel.h>
 
 #include "esc.h"
+#include "log.h"
 #include "pid.h"
 #include "sensors.h"
 
@@ -23,6 +24,13 @@ static struct k_thread controller_tid;
 #define SENSORS_THREAD_PRIO 5
 K_THREAD_STACK_DEFINE(sensors_stack, 2048);
 static struct k_thread sensors_tid;
+// Logging thread configuration (lowest priority: logging must never disturb
+// the control or sensor loops)
+#define LOGGING_THREAD_PRIO 10
+#define LOG_QUEUE_DEPTH 16
+K_THREAD_STACK_DEFINE(logging_stack, 1024);
+static struct k_thread logging_tid;
+K_MSGQ_DEFINE(log_queue, sizeof(struct log_msg), LOG_QUEUE_DEPTH, 4);
 
 pid_handler_t throttle_pid;
 static int motor[MOTOR_NUM] = {0, 0, 0, 0};
@@ -35,6 +43,7 @@ static float motor_throttle = 0.0f;
 
 static void send_motor_command(int m1, int m2, int m3, int m4);
 static void sensors_thread(void *a, void *b, void *c);
+static void logging_thread(void *a, void *b, void *c);
 #if defined(CONFIG_ESC_VERIFY_MODE)
 static float esc_verify_throttle(void);
 #endif
@@ -63,11 +72,9 @@ void controller_thread(void *a, void *b, void *c)
 
         time += CONTROL_THREAD_PERIOD_MS;
 
-        /*
-         * These kind of prints must be moved in a dedicated logging thread, to avoid
-         * blocking the control loop.
-         */
-        printf("feedback = %.3f, control = %d\n", altitude_feedback, control);
+        // Hand the diagnostic line to the low-priority logging thread so the
+        // control loop is never blocked by the (slow) console output.
+        log_print("feedback = %.3f, control = %d\n", altitude_feedback, control);
 
         for (int i = 0; i < MOTOR_NUM; i++)
         {
@@ -85,6 +92,8 @@ void controller_thread(void *a, void *b, void *c)
 
 static void sensors_thread(void *a, void *b, void *c)
 {
+    log_print("Sensors thread started\n");
+
     while (1)
     {
         sensors_altitude_process();
@@ -94,9 +103,29 @@ static void sensors_thread(void *a, void *b, void *c)
     }
 }
 
+static void logging_thread(void *a, void *b, void *c)
+{
+    struct log_msg msg;
+
+    while (1)
+    {
+        if (k_msgq_get(&log_queue, &msg, K_FOREVER) == 0)
+        {
+            printf("%s", msg.text);
+        }
+    }
+}
+
 int main(void)
 {
-    printf("Controller thread starting...\n");
+    // Start the logging facility first so early diagnostics can be queued.
+    log_init(&log_queue);
+
+    k_thread_create(&logging_tid, logging_stack,
+                    K_THREAD_STACK_SIZEOF(logging_stack), logging_thread, NULL,
+                    NULL, NULL, LOGGING_THREAD_PRIO, 0, K_NO_WAIT);
+
+    log_print("Controller thread starting...\n");
 
     pid_init(&throttle_pid, REFERENCE_ALTITUDE, 21, 5, 8);
     esc_init(MOTOR_NUM);
@@ -169,7 +198,7 @@ static void send_motor_command(int m1, int m2, int m3, int m4)
 #ifdef CONFIG_SIMULATION_MODE
     printf("%d.%03d %d.%03d %d.%03d %d.%03d\n", m1 / 1000, m1 % 1000, m2 / 1000,
            m2 % 1000, m3 / 1000, m3 % 1000, m4 / 1000, m4 % 1000);
-           
+
     fflush(stdout);
 #else
     float m[MOTOR_NUM] = {0.0f};

@@ -6,6 +6,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(flight_controller)
 
 target_sources(app PRIVATE src/main.c
+                           src/log.c
                            src/pid/pid.c
                            src/esc/esc.c
                            src/sensors/sensors.c

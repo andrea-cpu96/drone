@@ -1,7 +1,8 @@
 #include "i2c.h"
 
+#include "log.h"
+
 #include <errno.h>
-#include <stdio.h>
 
 #include <zephyr/drivers/i2c.h>
 
@@ -12,8 +13,11 @@ void i2c_master_init(void)
 {
     if (!device_is_ready(i2c_driver))
     {
-        printf("I2C device not ready\n");
+        log_print("I2C device not ready\n");
+        return;
     }
+
+    log_print("I2C master ready\n");
 }
 
 enum status_code i2c_master_write_packet_wait(struct i2c_master_packet *const packet)

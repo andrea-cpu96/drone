@@ -57,4 +57,14 @@ config ESC_VERIFY_MAX_THROTTLE_PROMILLE
 	help
 	  Maximum throttle value reached by the ESC verification ramp.
 
+config APP_LOG
+	bool "Enable application logging over UART"
+	depends on SERIAL && UART_CONSOLE
+	default y
+	help
+	  When enabled, log_print() writes formatted diagnostic messages to the
+	  UART console. When disabled (for example on targets without a UART
+	  console), log_print() compiles to a no-op so that no message is
+	  formatted or sent.
+
 source "Kconfig.zephyr"
