@@ -21,7 +21,7 @@ void pid_init(pid_handler_t *pid, float ref, float kp, float ki, float kd)
     pid->e_prev = 0;
     pid->t_prev = 0;
 
-    log_print("PID initialized (ref=%.1f kp=%.1f ki=%.1f kd=%.1f)\n", ref, kp, ki, kd);
+    log_print("PID initialized (ref=%.1f kp=%.1f ki=%.1f kd=%.1f)\n", (double)ref, (double)kp, (double)ki, (double)kd);
 }
 
 /**

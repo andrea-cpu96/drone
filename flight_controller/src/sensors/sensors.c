@@ -20,7 +20,7 @@
 #    define SEA_LEVEL_PRESSURE_HPA 1013.25f
 
 // Number of altitude samples averaged at init to capture the ground reference.
-#    define BAROMETER_ZERO_SAMPLES 10
+#    define BAROMETER_ZERO_SAMPLES 20
 
 // Below this altitude (m) the barometer is unreliable near the ground, so the
 // ToF distance is used as the altitude instead.
@@ -150,7 +150,7 @@ static void barometer_init(void)
 
     barometer_altitude_zero = altitude_sum / BAROMETER_ZERO_SAMPLES;
 
-    log_print("MS5611 barometer ready (zero = %.2f m)\n", barometer_altitude_zero);
+    log_print("MS5611 barometer ready (zero = %.2f m)\n", (double)barometer_altitude_zero);
 #endif  // CONFIG_SIMULATION_MODE
 }
 

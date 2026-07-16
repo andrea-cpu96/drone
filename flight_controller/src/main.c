@@ -74,7 +74,7 @@ void controller_thread(void *a, void *b, void *c)
 
         // Hand the diagnostic line to the low-priority logging thread so the
         // control loop is never blocked by the (slow) console output.
-        log_print("feedback = %.3f, control = %d\n", altitude_feedback, control);
+        log_print("feedback = %.3f, control = %d\n", (double)altitude_feedback, control);
 
         for (int i = 0; i < MOTOR_NUM; i++)
         {
