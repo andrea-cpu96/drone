@@ -4,15 +4,19 @@
 #include "log.h"
 
 #ifdef CONFIG_SIMULATION_MODE
+
 #    include <stdint.h>
 #    include <stdlib.h>
 
 #    include "uart.h"
+
 #else
+
 #    include <math.h>
 
 #    include <zephyr/kernel.h>
 
+#    include "bmi088.h"
 #    include "ms5611.h"
 #    include "vl53l1x.h"
 
@@ -25,21 +29,34 @@
 // Below this altitude (m) the barometer is unreliable near the ground, so the
 // ToF distance is used as the altitude instead.
 #    define ALTITUDE_TOF_THRESHOLD_M 3
+
 #endif  // CONFIG_SIMULATION_MODE
+
+// A 3-axis sensor reading (accelerometer in m/s^2, gyroscope in rad/s).
+struct axes_st
+{
+    float x;
+    float y;
+    float z;
+};
 
 /*
  * State of all sensors, shared between the sensors thread (writer, through
- * sensors_altitude_process) and the control thread (reader, through
- * sensors_read_altitude).
+ * sensors_*_process) and the control thread (reader).
  *
- * Each field is a word-sized scalar written with a single store, so on the
+ * The scalar fields are word-sized and written with a single store, so on the
  * target the access is atomic: the reader always observes either the previous
- * or the new complete value, never a partial one. No lock or "updating" flag is
- * needed. 'volatile' prevents the compiler from caching the shared value.
+ * or the new complete value, never a partial one. The 3-axis fields
+ * (accelerometer, gyroscope) are written one component at a time, so a reader
+ * may briefly observe a mix of the previous and new vector; that is acceptable
+ * for the control loop, which re-reads every cycle. 'volatile' prevents the
+ * compiler from caching the shared values.
  */
 struct sensor_samples_st
 {
-    volatile float altitude_sensor;  // meters
+    volatile float altitude_sensor;         // meters
+    volatile struct axes_st accelerometer;  // m/s^2
+    volatile struct axes_st gyroscope;      // rad/s
     // Add a field here for every new sensor.
 };
 
@@ -53,16 +70,20 @@ static float barometer_altitude_zero = 0.0f;
 
 static void barometer_init(void);
 static void tof_init(void);
+static void imu_init(void);
 #ifndef CONFIG_SIMULATION_MODE
 static float barometer_read(void);
 static bool barometer_read_absolute(float *altitude_m);
 static bool tof_read(float *altitude_m);
+static bool imu_read_accel(struct axes_st *accel);
+static bool imu_read_gyro(struct axes_st *gyro);
 #endif  // CONFIG_SIMULATION_MODE
 
 void sensors_init(void)
 {
     barometer_init();
     tof_init();
+    imu_init();
     // Add the init of every new sensor here.
 }
 
@@ -102,6 +123,28 @@ void sensors_altitude_process(void)
 float sensors_read_altitude(void)
 {
     return sensor_sample.altitude_sensor;
+}
+
+void sensors_imu_process(void)
+{
+#ifndef CONFIG_SIMULATION_MODE
+    struct axes_st accel;
+    struct axes_st gyro;
+
+    if (imu_read_accel(&accel))
+    {
+        sensor_sample.accelerometer.x = accel.x;
+        sensor_sample.accelerometer.y = accel.y;
+        sensor_sample.accelerometer.z = accel.z;
+    }
+
+    if (imu_read_gyro(&gyro))
+    {
+        sensor_sample.gyroscope.x = gyro.x;
+        sensor_sample.gyroscope.y = gyro.y;
+        sensor_sample.gyroscope.z = gyro.z;
+    }
+#endif  // CONFIG_SIMULATION_MODE
 }
 
 /*
@@ -154,6 +197,42 @@ static void barometer_init(void)
 #endif  // CONFIG_SIMULATION_MODE
 }
 
+/*
+ * Initialize the VL53L1X time-of-flight sensor. Does nothing in simulation mode,
+ * where there is no distance source.
+ */
+static void tof_init(void)
+{
+#ifndef CONFIG_SIMULATION_MODE
+    if (vl53l1x_init() != VL53L1X_STATUS_OK)
+    {
+        log_print("VL53L1X ToF sensor not detected\n");
+    }
+    else
+    {
+        log_print("VL53L1X ToF ready\n");
+    }
+#endif  // CONFIG_SIMULATION_MODE
+}
+
+/*
+ * Initialize the BMI088 IMU (accelerometer + gyroscope). Does nothing in
+ * simulation mode, where there is no IMU source.
+ */
+static void imu_init(void)
+{
+#ifndef CONFIG_SIMULATION_MODE
+    if (bmi088_init() != BMI088_STATUS_OK)
+    {
+        log_print("BMI088 IMU not detected\n");
+    }
+    else
+    {
+        log_print("BMI088 IMU ready\n");
+    }
+#endif  // CONFIG_SIMULATION_MODE
+}
+
 #ifndef CONFIG_SIMULATION_MODE
 /*
  * Read the MS5611 and convert the measured pressure into a takeoff-relative
@@ -190,27 +269,7 @@ static bool barometer_read_absolute(float *altitude_m)
     *altitude_m = 44330.0f * (1.0f - powf(pressure / SEA_LEVEL_PRESSURE_HPA, 1.0f / 5.255f));
     return true;
 }
-#endif  // CONFIG_SIMULATION_MODE
 
-/*
- * Initialize the VL53L1X time-of-flight sensor. Does nothing in simulation mode,
- * where there is no distance source.
- */
-static void tof_init(void)
-{
-#ifndef CONFIG_SIMULATION_MODE
-    if (vl53l1x_init() != VL53L1X_STATUS_OK)
-    {
-        log_print("VL53L1X ToF sensor not detected\n");
-    }
-    else
-    {
-        log_print("VL53L1X ToF ready\n");
-    }
-#endif  // CONFIG_SIMULATION_MODE
-}
-
-#ifndef CONFIG_SIMULATION_MODE
 /*
  * Read the VL53L1X and return the measured distance in meters via the out
  * parameter. Returns false on a read error; the caller falls back to the
@@ -228,5 +287,21 @@ static bool tof_read(float *altitude_m)
     // The driver reports millimeters; convert to meters.
     *altitude_m = distance_mm / 1000.0f;
     return true;
+}
+
+/*
+ * Read the BMI088 accelerometer. Returns false on a read error.
+ */
+static bool imu_read_accel(struct axes_st *accel)
+{
+    return bmi088_read_accel(&accel->x, &accel->y, &accel->z) == BMI088_STATUS_OK;
+}
+
+/*
+ * Read the BMI088 gyroscope. Returns false on a read error.
+ */
+static bool imu_read_gyro(struct axes_st *gyro)
+{
+    return bmi088_read_gyro(&gyro->x, &gyro->y, &gyro->z) == BMI088_STATUS_OK;
 }
 #endif  // CONFIG_SIMULATION_MODE

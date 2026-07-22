@@ -97,6 +97,7 @@ static void sensors_thread(void *a, void *b, void *c)
     while (1)
     {
         sensors_altitude_process();
+        sensors_imu_process();
         // Call the process function of every new sensor here.
 
         k_msleep(SENSORS_THREAD_PERIOD_MS);
