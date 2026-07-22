@@ -115,7 +115,7 @@ extern "C"
         ms5611_resolution_osr = ms5611_resolution_osr_4096;
 
         /* Initialize and enable device with config. */
-        i2c_master_init();
+        i2c_master_init(NULL, 0);
     }
 
     /**

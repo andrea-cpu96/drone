@@ -1,6 +1,8 @@
 #ifndef I2C_H
 #define I2C_H
 
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include <zephyr/device.h>
@@ -28,7 +30,7 @@ struct i2c_master_packet
     uint8_t *data;
 };
 
-void i2c_master_init(void);
+bool i2c_master_init(const struct device *const *devices, size_t count);
 enum status_code i2c_master_write_packet_wait(struct i2c_master_packet *const packet);
 enum status_code i2c_master_write_packet_wait_no_stop(struct i2c_master_packet *const packet);
 enum status_code i2c_master_read_packet_wait(struct i2c_master_packet *const packet);

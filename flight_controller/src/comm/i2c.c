@@ -9,15 +9,25 @@
 const struct device *const i2c_driver =
     DEVICE_DT_GET(DT_ALIAS(i2c_interface));
 
-void i2c_master_init(void)
+bool i2c_master_init(const struct device *const *devices, size_t count)
 {
     if (!device_is_ready(i2c_driver))
     {
         log_print("I2C device not ready\n");
-        return;
+        return false;
+    }
+
+    for (size_t i = 0; i < count; i++)
+    {
+        if (!device_is_ready(devices[i]))
+        {
+            log_print("I2C device not ready\n");
+            return false;
+        }
     }
 
     log_print("I2C master ready\n");
+    return true;
 }
 
 enum status_code i2c_master_write_packet_wait(struct i2c_master_packet *const packet)

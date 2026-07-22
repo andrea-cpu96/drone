@@ -1,5 +1,7 @@
 #include "vl53l1x.h"
 
+#include "i2c.h"
+
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
 
@@ -12,7 +14,10 @@ static bool tof_ready;
 
 enum vl53l1x_status vl53l1x_init(void)
 {
-    tof_ready = (tof_dev != NULL) && device_is_ready(tof_dev);
+    const struct device *const devices[] = {tof_dev};
+
+    tof_ready = i2c_master_init(devices, ARRAY_SIZE(devices));
+
     return tof_ready ? VL53L1X_STATUS_OK : VL53L1X_STATUS_NOT_READY;
 }
 
