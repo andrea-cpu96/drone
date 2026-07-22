@@ -4,11 +4,13 @@
  */
 
 #include <zephyr/dt-bindings/i2c/i2c.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
 
 / {
     aliases {
 		esc-controller  = &pwm1;
 		i2c-interface = &i2c1;
+		spi-interface = &spi2;
     };
 };
 
@@ -42,6 +44,52 @@
 		// Optional pins (uncomment if wired; needs gpio dt-bindings include):
 		// xshut-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
 		// int-gpios   = <&gpiob 4 GPIO_ACTIVE_LOW>;
+	};
+
+	/*
+	Alternative to the SPI for the BMI088
+	bmi088_accel: accel@18 {
+		compatible = "bosch,bmi08x-accel";
+		reg = <0x18>;           // 0x18 (SDO1=GND); 0x19 clashes with onboard LSM303.
+		accel-hz = "400";       // Output data rate (Hz).
+		accel-fs = <6>;         // Full-scale range (+/- g): 3, 6, 12 or 24.
+	};
+
+	bmi088_gyro: gyro@68 {
+		compatible = "bosch,bmi08x-gyro";
+		reg = <0x68>;           // 0x68 (SDO2=GND) or 0x69 (SDO2=VDDIO).
+		gyro-hz = "1000_116";   // "<ODR-Hz>_<filter-bandwidth-Hz>".
+		gyro-fs = <2000>;       // Full-scale range (+/- deg/s): 125..2000.
+	};
+	*/
+};
+
+// BMI088 6-axis IMU over SPI2 (SCK=PB13, MISO=PB14, MOSI=PB15). SPI2 is free on
+// this board (SPI1 is used by the onboard I3G4250D gyro). The accelerometer and
+// gyroscope are two separate SPI devices, each selected by its own chip-select
+// GPIO in cs-gpios; each child's reg is the index into that list.
+// NOTE: confirm the chip-select pins (PB12, PC4) match your actual wiring.
+&spi2 {
+	pinctrl-0 = <&spi2_sck_pb13 &spi2_miso_pb14 &spi2_mosi_pb15>;
+	pinctrl-names = "default";
+	// cs-gpios index 0 = accelerometer (PB12), index 1 = gyroscope (PC4).
+	cs-gpios = <&gpiob 12 GPIO_ACTIVE_LOW>, <&gpioc 4 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	bmi088_accel: accel@0 {
+		compatible = "bosch,bmi08x-accel";
+		reg = <0>;                      // cs-gpios index (accel CS = PB12).
+		spi-max-frequency = <10000000>; // 10 MHz (BMI088 SPI max).
+		accel-hz = "400";               // Output data rate (Hz).
+		accel-fs = <6>;                 // Full-scale range (+/- g): 3, 6, 12 or 24.
+	};
+
+	bmi088_gyro: gyro@1 {
+		compatible = "bosch,bmi08x-gyro";
+		reg = <1>;                      // cs-gpios index (gyro CS = PC4).
+		spi-max-frequency = <10000000>; // 10 MHz (BMI088 SPI max).
+		gyro-hz = "1000_116";           // "<ODR-Hz>_<filter-bandwidth-Hz>".
+		gyro-fs = <2000>;               // Full-scale range (+/- deg/s): 125..2000.
 	};
 };
 
