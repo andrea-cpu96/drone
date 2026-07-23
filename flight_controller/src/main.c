@@ -199,21 +199,21 @@ static void send_motor_command(int m1, int m2, int m3, int m4)
 #else
     float m[MOTOR_NUM] = {0.0f};
 
-#    if defined(CONFIG_ESC_VERIFY_MODE)
+#if defined(CONFIG_ESC_VERIFY_MODE)
     float throttle = esc_verify_throttle();
 
     m[0] = throttle;
     m[1] = throttle;
     m[2] = throttle;
     m[3] = throttle;
-#    else
+#else
     float throttle = ((float)m1 / (float)THROTTLE_LIMIT);
 
     m[0] = throttle;
     m[1] = ((float)m2 / (float)THROTTLE_LIMIT);
     m[2] = ((float)m3 / (float)THROTTLE_LIMIT);
     m[3] = ((float)m4 / (float)THROTTLE_LIMIT);
-#    endif
+#endif
 
     esc_set(m);
 #endif

@@ -5,30 +5,30 @@
 
 #ifdef CONFIG_SIMULATION_MODE
 
-#    include <stdint.h>
-#    include <stdlib.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-#    include "uart.h"
+#include "uart.h"
 
 #else
 
-#    include <math.h>
+#include <math.h>
 
-#    include <zephyr/kernel.h>
+#include <zephyr/kernel.h>
 
-#    include "bmi088.h"
-#    include "ms5611.h"
-#    include "vl53l1x.h"
+#include "bmi088.h"
+#include "ms5611.h"
+#include "vl53l1x.h"
 
 // Reference sea-level pressure (hPa) for the barometric altitude formula.
-#    define SEA_LEVEL_PRESSURE_HPA 1013.25f
+#define SEA_LEVEL_PRESSURE_HPA 1013.25f
 
 // Number of altitude samples averaged at init to capture the ground reference.
-#    define BAROMETER_ZERO_SAMPLES 20
+#define BAROMETER_ZERO_SAMPLES 20
 
 // Below this altitude (m) the barometer is unreliable near the ground, so the
 // ToF distance is used as the altitude instead.
-#    define ALTITUDE_TOF_THRESHOLD_M 3
+#define ALTITUDE_TOF_THRESHOLD_M 3
 
 #endif  // CONFIG_SIMULATION_MODE
 

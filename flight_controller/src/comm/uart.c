@@ -2,10 +2,10 @@
 
 #ifdef CONFIG_SIMULATION_MODE
 
-#    include <stdint.h>
-#    include <string.h>
+#include <stdint.h>
+#include <string.h>
 
-#    include <zephyr/drivers/uart.h>
+#include <zephyr/drivers/uart.h>
 
 static const struct device *const uart = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 

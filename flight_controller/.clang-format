@@ -16,7 +16,7 @@ AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 
 # Preprocessor formatting
-IndentPPDirectives: AfterHash
+IndentPPDirectives: None
 SpaceBeforeParens: ControlStatements
 
 # Comments alignment
