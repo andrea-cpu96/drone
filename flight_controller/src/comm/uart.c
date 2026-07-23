@@ -14,6 +14,7 @@ char uart_buffer[128];
 /**
  * @brief Read a line from the console
  *
+ * @return int
  */
 int uart_read(void)
 {

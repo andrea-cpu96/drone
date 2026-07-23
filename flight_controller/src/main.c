@@ -47,70 +47,14 @@ static float motor_throttle = 0.0f;
 #endif
 
 static void send_motor_command(int m1, int m2, int m3, int m4);
-static void sensors_thread(void *a, void *b, void *c);
-static void logging_thread(void *a, void *b, void *c);
 static int altitude_pid_process(void);
 #if defined(CONFIG_ESC_VERIFY_MODE)
 static float esc_verify_throttle(void);
 #endif
 
-void controller_thread(void *a, void *b, void *c)
-{
-    int control = 0;
-
-    send_motor_command(0, 0, 0, 0);
-
-    while (1)
-    {
-        k_msleep(CONTROL_THREAD_PERIOD_MS);
-
-        // Sample the IMU (accelerometer + gyroscope) directly in the control
-        // loop so the readings are as fresh as possible for the control law.
-        sensors_imu_process();
-
-        // Altitude PID: runs decimated (at the altitude sensor rate) inside the
-        // helper; the last computed output is held and returned in between.
-        control = altitude_pid_process();
-
-        for (int i = 0; i < MOTOR_NUM; i++)
-        {
-            motor[i] = control + LIFTOFF_THROTTLE;
-
-            if (motor[i] < 0)
-                motor[i] = 0;
-            else if (motor[i] > THROTTLE_LIMIT)
-                motor[i] = THROTTLE_LIMIT;
-        }
-
-        send_motor_command(motor[0], motor[1], motor[2], motor[3]);
-    }
-}
-
-static void sensors_thread(void *a, void *b, void *c)
-{
-    log_print("Sensors thread started\n");
-
-    while (1)
-    {
-        sensors_altitude_process();
-        // Call the process function of every new sensor here.
-
-        k_msleep(SENSORS_THREAD_PERIOD_MS);
-    }
-}
-
-static void logging_thread(void *a, void *b, void *c)
-{
-    struct log_msg msg;
-
-    while (1)
-    {
-        if (k_msgq_get(&log_queue, &msg, K_FOREVER) == 0)
-        {
-            printf("%s", msg.text);
-        }
-    }
-}
+static void controller_thread(void *a, void *b, void *c);
+static void sensors_thread(void *a, void *b, void *c);
+static void logging_thread(void *a, void *b, void *c);
 
 int main(void)
 {
@@ -141,14 +85,90 @@ int main(void)
 }
 
 /**
- * @brief Send motor command to the console
+ * @brief Main control loop: sample the IMU and run the (decimated) altitude PID.
  *
- * @param m1
- * @param m2
- * @param m3
- * @param m4
+ * @param a
+ * @param b
+ * @param c
  */
+static void controller_thread(void *a, void *b, void *c)
+{
+    int control = 0;
+
+    send_motor_command(0, 0, 0, 0);
+
+    while (1)
+    {
+        k_msleep(CONTROL_THREAD_PERIOD_MS);
+
+        // Sample the IMU (accelerometer + gyroscope) directly in the control
+        // loop so the readings are as fresh as possible for the control law.
+        sensors_imu_process();
+
+        // Altitude PID: runs decimated (at the altitude sensor rate) inside the
+        // helper; the last computed output is held and returned in between.
+        control = altitude_pid_process();
+
+        for (int i = 0; i < MOTOR_NUM; i++)
+        {
+            motor[i] = (control + LIFTOFF_THROTTLE);
+
+            if (motor[i] < 0)
+                motor[i] = 0;
+            else if (motor[i] > THROTTLE_LIMIT)
+                motor[i] = THROTTLE_LIMIT;
+        }
+
+        send_motor_command(motor[0], motor[1], motor[2], motor[3]);
+    }
+}
+
+/**
+ * @brief Sensors loop: periodically read and publish the altitude.
+ *
+ * @param a
+ * @param b
+ * @param c
+ */
+static void sensors_thread(void *a, void *b, void *c)
+{
+    log_print("Sensors thread started\n");
+
+    while (1)
+    {
+        sensors_altitude_process();
+        // Call the process function of every new sensor here.
+
+        k_msleep(SENSORS_THREAD_PERIOD_MS);
+    }
+}
+
+/**
+ * @brief Logging loop: drain the log queue to the console.
+ *
+ * @param a
+ * @param b
+ * @param c
+ */
+static void logging_thread(void *a, void *b, void *c)
+{
+    struct log_msg msg;
+
+    while (1)
+    {
+        if (k_msgq_get(&log_queue, &msg, K_FOREVER) == 0)
+        {
+            printf("%s", msg.text);
+        }
+    }
+}
+
 #if defined(CONFIG_ESC_VERIFY_MODE)
+/**
+ * @brief Ramp the throttle used by the ESC verification mode.
+ *
+ * @return float
+ */
 static float esc_verify_throttle(void)
 {
     float throttle = 0.0f;
@@ -189,6 +209,14 @@ static float esc_verify_throttle(void)
 }
 #endif
 
+/**
+ * @brief Send motor command to the console
+ *
+ * @param m1
+ * @param m2
+ * @param m3
+ * @param m4
+ */
 static void send_motor_command(int m1, int m2, int m3, int m4)
 {
 #ifdef CONFIG_SIMULATION_MODE
@@ -219,12 +247,16 @@ static void send_motor_command(int m1, int m2, int m3, int m4)
 #endif
 }
 
-/*
- * Run the altitude PID at a decimated rate. The sensors thread publishes a new
- * altitude only every ALTITUDE_PID_PERIOD_MS, so the PID is executed once every
- * ALTITUDE_PID_DECIMATION control cycles (with the real decimated dt) and its
- * output is held and returned on the cycles in between. This keeps the
- * derivative term meaningful and avoids recomputing on stale data.
+/**
+ * @brief Run the altitude PID at a decimated rate.
+ *
+ * The sensors thread publishes a new altitude only every ALTITUDE_PID_PERIOD_MS,
+ * so the PID is executed once every ALTITUDE_PID_DECIMATION control cycles (with
+ * the real decimated dt) and its output is held and returned on the cycles in
+ * between. This keeps the derivative term meaningful and avoids recomputing on
+ * stale data.
+ *
+ * @return int
  */
 static int altitude_pid_process(void)
 {

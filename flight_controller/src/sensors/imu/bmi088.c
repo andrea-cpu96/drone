@@ -14,6 +14,11 @@ static const struct device *const accel_dev = DEVICE_DT_GET_ANY(bosch_bmi08x_acc
 static const struct device *const gyro_dev = DEVICE_DT_GET_ANY(bosch_bmi08x_gyro);
 static bool imu_ready;
 
+/**
+ * @brief Initialize the BMI088 inertial measurement unit.
+ *
+ * @return enum bmi088_status
+ */
 enum bmi088_status bmi088_init(void)
 {
     const struct device *const devices[] = {accel_dev, gyro_dev};
@@ -23,6 +28,14 @@ enum bmi088_status bmi088_init(void)
     return imu_ready ? BMI088_STATUS_OK : BMI088_STATUS_NOT_READY;
 }
 
+/**
+ * @brief Read the latest acceleration measurement (m/s^2).
+ *
+ * @param x
+ * @param y
+ * @param z
+ * @return enum bmi088_status
+ */
 enum bmi088_status bmi088_read_accel(float *x, float *y, float *z)
 {
     struct sensor_value accel[3];
@@ -48,6 +61,14 @@ enum bmi088_status bmi088_read_accel(float *x, float *y, float *z)
     return BMI088_STATUS_OK;
 }
 
+/**
+ * @brief Read the latest angular rate measurement (rad/s).
+ *
+ * @param x
+ * @param y
+ * @param z
+ * @return enum bmi088_status
+ */
 enum bmi088_status bmi088_read_gyro(float *x, float *y, float *z)
 {
     struct sensor_value gyro[3];

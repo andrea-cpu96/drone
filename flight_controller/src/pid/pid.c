@@ -9,7 +9,11 @@ static int32_t pid_d(pid_handler_t *pid, float e, int dt_ms);
 /**
  * @brief PID initialization
  *
- * @param hpid
+ * @param pid
+ * @param ref
+ * @param kp
+ * @param ki
+ * @param kd
  */
 void pid_init(pid_handler_t *pid, float ref, float kp, float ki, float kd)
 {
@@ -27,6 +31,7 @@ void pid_init(pid_handler_t *pid, float ref, float kp, float ki, float kd)
 /**
  * @brief PID run function
  *
+ * @param pid
  * @param fb
  * @param t
  * @return int32_t
@@ -64,6 +69,7 @@ int pid_run(pid_handler_t *pid, float fb, int32_t t)
 /**
  * @brief Dynamic change of reference
  *
+ * @param pid
  * @param new_ref
  */
 void pid_set_ref(pid_handler_t *pid, float new_ref)
@@ -74,6 +80,7 @@ void pid_set_ref(pid_handler_t *pid, float new_ref)
 /**
  * @brief Proportional component of the PID
  *
+ * @param pid
  * @param e
  * @return int32_t
  */
@@ -85,7 +92,9 @@ static int32_t pid_p(pid_handler_t *pid, float e)
 /**
  * @brief Integral component of the PID
  *
+ * @param pid
  * @param e
+ * @param dt_ms
  * @return int32_t
  */
 static int32_t pid_i(pid_handler_t *pid, float e, int dt_ms)
@@ -98,7 +107,9 @@ static int32_t pid_i(pid_handler_t *pid, float e, int dt_ms)
 /**
  * @brief Derivative component of the PID
  *
+ * @param pid
  * @param e
+ * @param dt_ms
  * @return int32_t
  */
 static int32_t pid_d(pid_handler_t *pid, float e, int dt_ms)

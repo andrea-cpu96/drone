@@ -79,6 +79,9 @@ static bool imu_read_accel(struct axes_st *accel);
 static bool imu_read_gyro(struct axes_st *gyro);
 #endif  // CONFIG_SIMULATION_MODE
 
+/**
+ * @brief Initialize all sensors (barometer, ToF, IMU).
+ */
 void sensors_init(void)
 {
     barometer_init();
@@ -87,6 +90,9 @@ void sensors_init(void)
     // Add the init of every new sensor here.
 }
 
+/**
+ * @brief Read the altitude source and publish the latest value.
+ */
 void sensors_altitude_process(void)
 {
 #ifdef CONFIG_SIMULATION_MODE
@@ -120,11 +126,19 @@ void sensors_altitude_process(void)
 #endif  // CONFIG_SIMULATION_MODE
 }
 
+/**
+ * @brief Get the latest published altitude value.
+ *
+ * @return float
+ */
 float sensors_read_altitude(void)
 {
     return sensor_sample.altitude_sensor;
 }
 
+/**
+ * @brief Read the IMU (accelerometer + gyroscope) and publish the latest values.
+ */
 void sensors_imu_process(void)
 {
 #ifndef CONFIG_SIMULATION_MODE
@@ -147,12 +161,14 @@ void sensors_imu_process(void)
 #endif  // CONFIG_SIMULATION_MODE
 }
 
-/*
- * Initialize the MS5611 barometer: bring up the I2C master, verify the device is
- * present and reset it so the calibration PROM is reloaded into the internal
- * registers before the first measurement. Then capture the ground reference by
- * averaging BAROMETER_ZERO_SAMPLES altitude readings. Does nothing in simulation
- * mode, where the altitude comes from the UART.
+/**
+ * @brief Initialize the MS5611 barometer and capture the ground reference.
+ *
+ * Bring up the I2C master, verify the device is present and reset it so the
+ * calibration PROM is reloaded into the internal registers before the first
+ * measurement. Then capture the ground reference by averaging
+ * BAROMETER_ZERO_SAMPLES altitude readings. Does nothing in simulation mode,
+ * where the altitude comes from the UART.
  */
 static void barometer_init(void)
 {
@@ -197,9 +213,10 @@ static void barometer_init(void)
 #endif  // CONFIG_SIMULATION_MODE
 }
 
-/*
- * Initialize the VL53L1X time-of-flight sensor. Does nothing in simulation mode,
- * where there is no distance source.
+/**
+ * @brief Initialize the VL53L1X time-of-flight sensor.
+ *
+ * Does nothing in simulation mode, where there is no distance source.
  */
 static void tof_init(void)
 {
@@ -215,9 +232,10 @@ static void tof_init(void)
 #endif  // CONFIG_SIMULATION_MODE
 }
 
-/*
- * Initialize the BMI088 IMU (accelerometer + gyroscope). Does nothing in
- * simulation mode, where there is no IMU source.
+/**
+ * @brief Initialize the BMI088 IMU (accelerometer + gyroscope).
+ *
+ * Does nothing in simulation mode, where there is no IMU source.
  */
 static void imu_init(void)
 {
@@ -234,9 +252,12 @@ static void imu_init(void)
 }
 
 #ifndef CONFIG_SIMULATION_MODE
-/*
- * Read the MS5611 and convert the measured pressure into a takeoff-relative
- * altitude in meters. The last published altitude is kept on a read error.
+/**
+ * @brief Read the barometer as a takeoff-relative altitude in meters.
+ *
+ * The last published altitude is kept on a read error.
+ *
+ * @return float
  */
 static float barometer_read(void)
 {
@@ -251,9 +272,11 @@ static float barometer_read(void)
     return altitude - barometer_altitude_zero;
 }
 
-/*
- * Read the MS5611 and compute the absolute altitude in meters above sea level.
- * Returns false on an I2C/read error.
+/**
+ * @brief Read the MS5611 and compute the absolute altitude above sea level.
+ *
+ * @param altitude_m
+ * @return bool
  */
 static bool barometer_read_absolute(float *altitude_m)
 {
@@ -270,10 +293,13 @@ static bool barometer_read_absolute(float *altitude_m)
     return true;
 }
 
-/*
- * Read the VL53L1X and return the measured distance in meters via the out
- * parameter. Returns false on a read error; the caller falls back to the
- * barometer in that case.
+/**
+ * @brief Read the VL53L1X distance (in meters) via the out parameter.
+ *
+ * Returns false on a read error; the caller falls back to the barometer.
+ *
+ * @param altitude_m
+ * @return bool
  */
 static bool tof_read(float *altitude_m)
 {
@@ -289,16 +315,22 @@ static bool tof_read(float *altitude_m)
     return true;
 }
 
-/*
- * Read the BMI088 accelerometer. Returns false on a read error.
+/**
+ * @brief Read the BMI088 accelerometer.
+ *
+ * @param accel
+ * @return bool
  */
 static bool imu_read_accel(struct axes_st *accel)
 {
     return bmi088_read_accel(&accel->x, &accel->y, &accel->z) == BMI088_STATUS_OK;
 }
 
-/*
- * Read the BMI088 gyroscope. Returns false on a read error.
+/**
+ * @brief Read the BMI088 gyroscope.
+ *
+ * @param gyro
+ * @return bool
  */
 static bool imu_read_gyro(struct axes_st *gyro)
 {

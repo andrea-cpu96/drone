@@ -16,6 +16,12 @@ const struct device *esc_pwm = DEVICE_DT_GET(DT_ALIAS(esc_controller));
 int esc_ch_num;
 #endif  // CONFIG_SIMULATION_MODE
 
+/**
+ * @brief Initialize the ESC PWM outputs and set them to idle.
+ *
+ * @param n_ch
+ * @return esc_status
+ */
 esc_status esc_init(int n_ch)
 {
 #ifndef CONFIG_SIMULATION_MODE
@@ -52,6 +58,12 @@ esc_status esc_init(int n_ch)
 #endif  // CONFIG_SIMULATION_MODE
 }
 
+/**
+ * @brief Set the throttle of each motor (0.0..1.0) on the ESC outputs.
+ *
+ * @param m
+ * @return esc_status
+ */
 esc_status esc_set(float *m)
 {
 #ifndef CONFIG_SIMULATION_MODE
