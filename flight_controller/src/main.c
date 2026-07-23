@@ -9,7 +9,8 @@
 
 #define REFERENCE_ALTITUDE 100
 
-#define CONTROL_THREAD_PERIOD_MS 10
+// 3 ms (333 Hz): faster inner loop, kept below the 400 Hz ESC PWM
+#define CONTROL_THREAD_PERIOD_MS 3
 #define SENSORS_THREAD_PERIOD_MS 100
 
 #define LIFTOFF_THROTTLE 2092
@@ -61,6 +62,10 @@ void controller_thread(void *a, void *b, void *c)
     {
         k_msleep(CONTROL_THREAD_PERIOD_MS);
 
+        // Sample the IMU (accelerometer + gyroscope) directly in the control
+        // loop so the readings are as fresh as possible for the control law.
+        sensors_imu_process();
+
         /*
          * Read the latest altitude published by the sensors thread. The value is
          * a word-sized scalar written with a single store, so the read is atomic
@@ -97,7 +102,6 @@ static void sensors_thread(void *a, void *b, void *c)
     while (1)
     {
         sensors_altitude_process();
-        sensors_imu_process();
         // Call the process function of every new sensor here.
 
         k_msleep(SENSORS_THREAD_PERIOD_MS);
