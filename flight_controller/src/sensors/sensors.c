@@ -98,8 +98,9 @@ void sensors_altitude_process(void)
 #ifdef CONFIG_SIMULATION_MODE
     if (uart_read())
     {
-        // The simulator sends the altitude in meters.
-        sensor_sample.altitude_sensor = (float)atof(uart_buffer);
+        // The simulator sends the altitude in meters. Parsed with atoi (integer
+        // meters) because the Zephyr minimal libc provides no atof/strtod.
+        sensor_sample.altitude_sensor = (float)atoi(uart_buffer);
     }
 #else
     // Near the ground the barometer is unreliable, so below the threshold the

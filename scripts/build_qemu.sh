@@ -19,6 +19,6 @@ source "${HOME}/zephyrproject/.venv/bin/activate"
 source "${HOME}/zephyrproject/zephyr/zephyr-env.sh"
 
 cd "${APP_DIR}"
-echo "Building firmware for QEMU target: qemu_cortex_m3"
+echo "Building firmware for QEMU target: qemu_cortex_m3 (simulation mode)"
 rm -rf build
-west build -b qemu_cortex_m3
+west build -b qemu_cortex_m3 -- -DCONFIG_SIMULATION_MODE=y
