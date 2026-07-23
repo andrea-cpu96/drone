@@ -13,6 +13,10 @@
 #define CONTROL_THREAD_PERIOD_MS 3
 #define SENSORS_THREAD_PERIOD_MS 100
 
+// The altitude PID is decimated to the altitude sensor update rate
+#define ALTITUDE_PID_PERIOD_MS SENSORS_THREAD_PERIOD_MS
+#define ALTITUDE_PID_DECIMATION (ALTITUDE_PID_PERIOD_MS / CONTROL_THREAD_PERIOD_MS)
+
 #define LIFTOFF_THROTTLE 2092
 #define THROTTLE_LIMIT 4000
 #define MOTOR_NUM 4
@@ -33,7 +37,7 @@ K_THREAD_STACK_DEFINE(logging_stack, 1024);
 static struct k_thread logging_tid;
 K_MSGQ_DEFINE(log_queue, sizeof(struct log_msg), LOG_QUEUE_DEPTH, 4);
 
-pid_handler_t throttle_pid;
+pid_handler_t altitude_pid;
 static int motor[MOTOR_NUM] = {0, 0, 0, 0};
 #if defined(CONFIG_ESC_VERIFY_MODE)
 static int motor_command_started = 0;
@@ -45,15 +49,13 @@ static float motor_throttle = 0.0f;
 static void send_motor_command(int m1, int m2, int m3, int m4);
 static void sensors_thread(void *a, void *b, void *c);
 static void logging_thread(void *a, void *b, void *c);
+static int altitude_pid_process(void);
 #if defined(CONFIG_ESC_VERIFY_MODE)
 static float esc_verify_throttle(void);
 #endif
 
 void controller_thread(void *a, void *b, void *c)
 {
-    static uint32_t time = 0;
-
-    float altitude_feedback = 0.0f;
     int control = 0;
 
     send_motor_command(0, 0, 0, 0);
@@ -66,20 +68,9 @@ void controller_thread(void *a, void *b, void *c)
         // loop so the readings are as fresh as possible for the control law.
         sensors_imu_process();
 
-        /*
-         * Read the latest altitude published by the sensors thread. The value is
-         * a word-sized scalar written with a single store, so the read is atomic
-         * and always returns a complete value.
-         */
-        altitude_feedback = sensors_read_altitude();
-
-        control = pid_run(&throttle_pid, altitude_feedback, time);
-
-        time += CONTROL_THREAD_PERIOD_MS;
-
-        // Hand the diagnostic line to the low-priority logging thread so the
-        // control loop is never blocked by the (slow) console output.
-        log_print("feedback = %.3f, control = %d\n", (double)altitude_feedback, control);
+        // Altitude PID: runs decimated (at the altitude sensor rate) inside the
+        // helper; the last computed output is held and returned in between.
+        control = altitude_pid_process();
 
         for (int i = 0; i < MOTOR_NUM; i++)
         {
@@ -132,7 +123,7 @@ int main(void)
 
     log_print("Controller thread starting...\n");
 
-    pid_init(&throttle_pid, REFERENCE_ALTITUDE, 21, 5, 8);
+    pid_init(&altitude_pid, REFERENCE_ALTITUDE, 21, 5, 8);
     esc_init(MOTOR_NUM);
 
     // Initialize sensors (barometer, etc.) and perform an initial read
@@ -226,4 +217,34 @@ static void send_motor_command(int m1, int m2, int m3, int m4)
 
     esc_set(m);
 #endif
+}
+
+/*
+ * Run the altitude PID at a decimated rate. The sensors thread publishes a new
+ * altitude only every ALTITUDE_PID_PERIOD_MS, so the PID is executed once every
+ * ALTITUDE_PID_DECIMATION control cycles (with the real decimated dt) and its
+ * output is held and returned on the cycles in between. This keeps the
+ * derivative term meaningful and avoids recomputing on stale data.
+ */
+static int altitude_pid_process(void)
+{
+    static uint32_t counter = 0;
+    static uint32_t time = 0;
+    static int control = 0;
+
+    if (counter == 0)
+    {
+        float altitude_feedback = sensors_read_altitude();
+
+        control = pid_run(&altitude_pid, altitude_feedback, time);
+        time += ALTITUDE_PID_PERIOD_MS;
+
+        // Hand the diagnostic line to the low-priority logging thread so the
+        // control loop is never blocked by the (slow) console output.
+        log_print("feedback = %.3f, control = %d\n", (double)altitude_feedback, control);
+    }
+
+    counter = (counter + 1) % ALTITUDE_PID_DECIMATION;
+
+    return control;
 }
